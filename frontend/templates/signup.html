@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShadowBox - Sign Up</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+        
+        body {
+            background: linear-gradient(135deg, #0f0f0f, #1e1e1e);
+            color: #ffffff;
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .signup-container {
+            background: rgba(26, 26, 26, 0.95);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            width: 400px;
+            text-align: center;
+            transition: transform 0.3s ease-in-out;
+            backdrop-filter: blur(10px);
+        }
+        .signup-container:hover {
+            transform: scale(1.05);
+        }
+        h2 {
+            margin-bottom: 20px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: #00aaff;
+            font-size: 24px;
+        }
+        input {
+            width: 100%;
+            padding: 14px;
+            margin: 12px 0;
+            border: none;
+            border-radius: 8px;
+            background: #2a2a2a;
+            color: white;
+            font-size: 16px;
+            outline: none;
+            transition: 0.3s;
+        }
+        input:focus {
+            background: #3a3a3a;
+            box-shadow: 0 0 10px rgba(0, 123, 255, 0.8);
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(90deg, #007BFF, #00d4ff);
+            border: none;
+            color: white;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0, 123, 255, 0.4);
+        }
+        button:hover {
+            background: linear-gradient(90deg, #0056b3, #0099ff);
+            box-shadow: 0 0 15px rgba(0, 123, 255, 0.7);
+        }
+        .login-link {
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        .login-link a {
+            color: #00aaff;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="signup-container">
+        <h2>Create Your ShadowBox Account</h2>
+        <form action="/signup" method="POST">
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="email" name="email" placeholder="Email" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Sign Up</button>
+        </form>
+        <div class="login-link">
+            Already have an account? <a href="/login">Login</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShadowBox - Secure Your Files</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap');
+
+        /* Global Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #121212, #1f1f1f);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* Hero Section */
+        .hero {
+            background: url('https://via.placeholder.com/1600x800') no-repeat center center fixed;
+            background-size: cover;
+            padding: 100px 40px;
+            border-radius: 10px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(15px);
+            max-width: 90%;
+            animation: fadeIn 1s ease-out;
+        }
+        .hero h1 {
+            color: #00aaff;
+            font-size: 50px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+            text-shadow: 0 0 25px rgba(0, 170, 255, 0.9);
+        }
+        .hero h2 {
+            color: #fff;
+            font-size: 22px;
+            margin-bottom: 25px;
+            font-weight: 400;
+        }
+        .hero p {
+            color: #bbb;
+            font-size: 16px;
+            margin-bottom: 30px;
+            opacity: 0.8;
+        }
+        .cta-button {
+            padding: 14px 28px;
+            background: #00aaff;
+            color: #fff;
+            font-size: 18px;
+            font-weight: 600;
+            text-decoration: none;
+            border-radius: 6px;
+            box-shadow: 0 6px 25px rgba(0, 170, 255, 0.6);
+            transition: 0.3s ease;
+        }
+        .cta-button:hover {
+            background: #0099cc;
+            box-shadow: 0 8px 30px rgba(0, 170, 255, 0.8);
+        }
+
+        /* Features Section */
+        .features {
+            display: flex;
+            justify-content: center;
+            margin-top: 80px;
+            width: 100%;
+            gap: 20px;
+            flex-wrap: wrap;
+            animation: fadeIn 2s ease-in-out;
+        }
+        .feature-box {
+            background: rgba(40, 40, 40, 0.9);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            width: 300px;
+            opacity: 0;
+            animation: fadeInUp 1s forwards;
+        }
+        .feature-box:nth-child(1) {
+            animation-delay: 0.3s;
+        }
+        .feature-box:nth-child(2) {
+            animation-delay: 0.6s;
+        }
+        .feature-box:nth-child(3) {
+            animation-delay: 0.9s;
+        }
+        .feature-box h3 {
+            color: #00aaff;
+            margin-bottom: 20px;
+            font-size: 22px;
+            font-weight: 500;
+        }
+        .feature-box p {
+            color: #ccc;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        /* Footer Section */
+        footer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            padding: 20px 0;
+            background: rgba(40, 40, 40, 0.8);
+            text-align: center;
+            color: #aaa;
+            font-size: 14px;
+        }
+        footer a {
+            color: #00aaff;
+            text-decoration: none;
+        }
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        /* Animation */
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        @keyframes fadeInUp {
+            0% { opacity: 0; transform: translateY(20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <h1>ShadowBox</h1>
+        <h2>Secure Your Files with Ease</h2>
+        <p>Protect your sensitive data with industry-leading encryption. Simple, secure, and reliable.</p>
+        <a href="/signup" class="cta-button">Get Started</a>
+    </section>
+
+    <!-- Features Section -->
+    <div class="features">
+        <div class="feature-box">
+            <h3>Top-notch Security</h3>
+            <p>End-to-end encryption keeps your files safe from prying eyes.</p>
+        </div>
+        <div class="feature-box">
+            <h3>Seamless Sync</h3>
+            <p>Access and manage your files across all devices effortlessly.</p>
+        </div>
+        <div class="feature-box">
+            <h3>Simple Interface</h3>
+            <p>Easy-to-use interface for managing your files without complications.</p>
+        </div>
+    </div>
+
+    <!-- Footer Section -->
+    <footer>
+        <p>&copy; 2025 ShadowBox | <a href="/privacy-policy">Privacy Policy</a></p>
+    </footer>
+
+</body>
+</html>

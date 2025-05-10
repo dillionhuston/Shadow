@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload File - ShadowBox</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+        
+        body {
+            background: linear-gradient(135deg, #0f0f0f, #1e1e1e);
+            color: #ffffff;
+            font-family: 'Poppins', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .upload-container {
+            background: rgba(26, 26, 26, 0.95);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            width: 400px;
+            text-align: center;
+            transition: transform 0.3s ease-in-out;
+            backdrop-filter: blur(10px);
+        }
+        .upload-container:hover {
+            transform: scale(1.05);
+        }
+        h2 {
+            margin-bottom: 20px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: #00aaff;
+        }
+        .drag-area {
+            border: 2px dashed #00aaff;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .drag-area:hover {
+            background: rgba(0, 170, 255, 0.1);
+        }
+        .file-input {
+            display: none;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(90deg, #007BFF, #00d4ff);
+            border: none;
+            color: white;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.3s;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0, 123, 255, 0.4);
+            margin-top: 20px;
+        }
+        button:hover {
+            background: linear-gradient(90deg, #0056b3, #0099ff);
+            box-shadow: 0 0 15px rgba(0, 123, 255, 0.7);
+        }
+    </style>
+</head>
+<body>
+    <form id="uploadForm" enctype="multipart/form-data">
+        <div class="drag-area" id="dragArea">
+            <p>Drag & Drop your file here or Click to Select</p>
+            <input type="file" id="fileInput" name="file" required>
+        </div>
+        <button type="submit">Upload</button>
+    </form>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+const dragArea = document.getElementById('dragArea');
+
+dragArea.addEventListener('click', () => {
+    fileInput.click();
+});
+
+dragArea.addEventListener('dragover', (event) => {
+    event.preventDefault();
+    dragArea.style.background = 'rgba(0, 170, 255, 0.2)';
+});
+
+dragArea.addEventListener('dragleave', () => {
+    dragArea.style.background = 'transparent';
+});
+
+dragArea.addEventListener('drop', (event) => {
+    event.preventDefault();
+    dragArea.style.background = 'transparent';
+
+    if (event.dataTransfer.files.length > 0) {
+        const file = event.dataTransfer.files[0];
+
+        // Manually set file input for submission
+        let dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        fileInput.files = dataTransfer.files;
+
+        console.log("File dropped:", file.name);
+    }
+});
+
+document.getElementById("uploadForm").addEventListener("submit", function(event) {
+    event.preventDefault(); // Prevent default submission
+
+    const fileInput = document.getElementById("fileInput");
+    const formData = new FormData();
+
+    if (!fileInput.files.length) {
+        alert("Please select a file before uploading.");
+        return;
+    }
+
+    formData.append("file", fileInput.files[0]);
+
+    console.log("Sending file:", fileInput.files[0].name); // Debugging
+
+    fetch("/upload", {
+        method: "POST",
+        body: formData
+    })
+    .then(response => response.text())
+    .then(data => {
+        console.log("Server Response:", data);
+        alert("File uploaded successfully!");
+    })
+    .catch(error => {
+        console.error("Error uploading file:", error);
+        alert("Upload failed.");
+    });
+});
+
+
+
+
+
+// Debugging file selection
+fileInput.addEventListener("change", () => {
+    if (fileInput.files.length > 0) {
+        console.log("File selected:", fileInput.files[0].name);
+    }
+});
+</script>
+</html>
