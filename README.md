@@ -34,5 +34,5 @@ ShadowBox is a privacy-first, encrypted cloud storage solution built with **Dart
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/dillionhuston/ShadowBox.git
+   git clone https://github.com/dillionhuston/Shadow.git
    cd ShadowBox
