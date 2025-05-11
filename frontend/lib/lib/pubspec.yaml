@@ -1,16 +1,16 @@
-name: shadow_box
+name: apiservice_dart
 description: A Flutter frontend for ShadowBox
 version: 1.0.0
 environment:
-   sdk: ">=2.17.0 <4.0.0"
+  sdk: '>=2.12.0 <3.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
-  http: ^0.13.5  # For API requests
   provider: ^6.0.0  # For state management
-  cupertino_icons: ^1.0.2
+  http: ^0.13.5  # For API requests
   file_picker: ^5.2.0  # For file uploads
+  cupertino_icons: ^1.0.2
 
 dev_dependencies:
   flutter_test:
