@@ -3,6 +3,7 @@
 **Secure & Private Cloud Storage – Your Digital Fort Knox**
 
 > ⚠️ **Prototype Warning**: ShadowBox is in early development. Avoid using it for sensitive or production data.
+> This main branch contains the new version, protoype can be viewd in second branch
 
 ShadowBox is a privacy-first, encrypted cloud storage solution built with **Dart** for the front-end and **Python** for the back-end. It’s designed with user security and privacy in mind, leveraging AES-256 encryption to ensure that your files remain secure. The goal is to provide a decentralized, user-controlled file-sharing platform that emphasizes privacy.
 
