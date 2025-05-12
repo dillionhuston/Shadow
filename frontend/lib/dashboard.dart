@@ -1,7 +1,52 @@
 import 'package:flutter/material.dart';
+import 'api_service.dart';
 
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
+
+  @override
+  State<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends State<DashboardPage> {
+  List<dynamic> files = [];
+  String _message = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFiles();
+  }
+
+  Future<void> _loadFiles() async {
+    try {
+      final loadedFiles = await ApiService.getDashboardFiles();
+      setState(() {
+        files = loadedFiles;
+      });
+    } catch (e) {
+      setState(() {
+        _message = e.toString();
+      });
+    }
+  }
+
+  Future<void> _uploadFile() async {
+    try {
+      final result = await ApiService.uploadFile(
+        'example.pdf',
+        'base64encodeddata',
+      );
+      setState(() {
+        _message = 'Upload successful: ${result['message']}';
+        _loadFiles(); // Refresh file list
+      });
+    } catch (e) {
+      setState(() {
+        _message = e.toString();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -99,7 +144,7 @@ class DashboardPage extends StatelessWidget {
                             ),
                             const SizedBox(height: 25),
                             ElevatedButton(
-                              onPressed: () {},
+                              onPressed: _uploadFile,
                               child: const Text('Upload'),
                             ),
                             const SizedBox(height: 20),
@@ -108,20 +153,27 @@ class DashboardPage extends StatelessWidget {
                               style: TextStyle(color: Color(0xFF00BCD4)),
                             ),
                             const SizedBox(height: 10),
-                            ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: 3,
-                              itemBuilder: (context, index) {
-                                return ListTile(
-                                  title: Text(
-                                    'File $index.pdf',
-                                    style: const TextStyle(
-                                      color: Color(0xFFFFFFFF),
+                            Expanded(
+                              child: ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: files.length,
+                                itemBuilder: (context, index) {
+                                  return ListTile(
+                                    title: Text(
+                                      files[index]['name'] ?? 'File $index.pdf',
+                                      style: const TextStyle(
+                                        color: Color(0xFFFFFFFF),
+                                      ),
                                     ),
-                                  ),
-                                  onTap: () {},
-                                );
-                              },
+                                    onTap: () {},
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              _message,
+                              style: const TextStyle(color: Color(0xFFF44336)),
                             ),
                           ],
                         ),

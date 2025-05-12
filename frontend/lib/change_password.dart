@@ -1,7 +1,40 @@
 import 'package:flutter/material.dart';
+import 'api_service.dart';
 
-class ChangePasswordPage extends StatelessWidget {
+class ChangePasswordPage extends StatefulWidget {
   const ChangePasswordPage({super.key});
+
+  @override
+  State<ChangePasswordPage> createState() => _ChangePasswordPageState();
+}
+
+class _ChangePasswordPageState extends State<ChangePasswordPage> {
+  final _currentPasswordController = TextEditingController();
+  final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  String _message = '';
+
+  Future<void> _changePassword() async {
+    if (_newPasswordController.text != _confirmPasswordController.text) {
+      setState(() {
+        _message = 'Passwords do not match';
+      });
+      return;
+    }
+    try {
+      final result = await ApiService.changePassword(
+        _currentPasswordController.text,
+        _newPasswordController.text,
+      );
+      setState(() {
+        _message = 'Password changed: ${result['message']}';
+      });
+    } catch (e) {
+      setState(() {
+        _message = e.toString();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -112,6 +145,7 @@ class ChangePasswordPage extends StatelessWidget {
                             ),
                             const SizedBox(height: 20),
                             TextField(
+                              controller: _currentPasswordController,
                               decoration: const InputDecoration(
                                 labelText: 'Current Password',
                               ),
@@ -120,6 +154,7 @@ class ChangePasswordPage extends StatelessWidget {
                             ),
                             const SizedBox(height: 20),
                             TextField(
+                              controller: _newPasswordController,
                               decoration: const InputDecoration(
                                 labelText: 'New Password',
                               ),
@@ -128,6 +163,7 @@ class ChangePasswordPage extends StatelessWidget {
                             ),
                             const SizedBox(height: 20),
                             TextField(
+                              controller: _confirmPasswordController,
                               decoration: const InputDecoration(
                                 labelText: 'Confirm New Password',
                               ),
@@ -136,8 +172,13 @@ class ChangePasswordPage extends StatelessWidget {
                             ),
                             const SizedBox(height: 20),
                             ElevatedButton(
-                              onPressed: () {},
+                              onPressed: _changePassword,
                               child: const Text('Update Password'),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              _message,
+                              style: const TextStyle(color: Color(0xFFF44336)),
                             ),
                           ],
                         ),

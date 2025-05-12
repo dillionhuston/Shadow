@@ -1,7 +1,34 @@
 import 'package:flutter/material.dart';
+import 'api_service.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  String _message = '';
+
+  Future<void> _login() async {
+    try {
+      final result = await ApiService.login(
+        _emailController.text,
+        _passwordController.text,
+      );
+      setState(() {
+        _message = 'Login successful: ${result['message']}';
+      });
+      Navigator.pushNamed(context, '/dashboard');
+    } catch (e) {
+      setState(() {
+        _message = e.toString();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -99,6 +126,7 @@ class LoginPage extends StatelessWidget {
                             ),
                             const SizedBox(height: 25),
                             TextField(
+                              controller: _emailController,
                               decoration: const InputDecoration(
                                 labelText: 'Email',
                               ),
@@ -106,6 +134,7 @@ class LoginPage extends StatelessWidget {
                             ),
                             const SizedBox(height: 20),
                             TextField(
+                              controller: _passwordController,
                               decoration: const InputDecoration(
                                 labelText: 'Password',
                               ),
@@ -114,8 +143,13 @@ class LoginPage extends StatelessWidget {
                             ),
                             const SizedBox(height: 20),
                             ElevatedButton(
-                              onPressed: () {},
+                              onPressed: _login,
                               child: const Text('Log In'),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              _message,
+                              style: const TextStyle(color: Color(0xFFF44336)),
                             ),
                           ],
                         ),

@@ -1,7 +1,34 @@
 import 'package:flutter/material.dart';
+import 'api_service.dart';
 
-class Homepage extends StatelessWidget {
+class Homepage extends StatefulWidget {
   const Homepage({super.key});
+
+  @override
+  State<Homepage> createState() => _HomepageState();
+}
+
+class _HomepageState extends State<Homepage> {
+  int fileCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFiles();
+  }
+
+  Future<void> _loadFiles() async {
+    try {
+      final files = await ApiService.getDashboardFiles();
+      setState(() {
+        fileCount = files.length;
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -98,9 +125,9 @@ class Homepage extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 25),
-                            const Text(
-                              'Your creative space awaits.',
-                              style: TextStyle(color: Color(0xFF777777)),
+                            Text(
+                              'You have $fileCount files.',
+                              style: const TextStyle(color: Color(0xFF777777)),
                             ),
                             const SizedBox(height: 20),
                             ElevatedButton(

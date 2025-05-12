@@ -1,7 +1,34 @@
 import 'package:flutter/material.dart';
+import 'api_service.dart';
 
-class SignupPage extends StatelessWidget {
+class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
+
+  @override
+  State<SignupPage> createState() => _SignupPageState();
+}
+
+class _SignupPageState extends State<SignupPage> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  String _message = '';
+
+  Future<void> _signup() async {
+    try {
+      final result = await ApiService.signup(
+        _emailController.text,
+        _passwordController.text,
+      );
+      setState(() {
+        _message = 'Signup successful: ${result['message']}';
+      });
+      Navigator.pushNamed(context, '/login');
+    } catch (e) {
+      setState(() {
+        _message = e.toString();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -99,6 +126,7 @@ class SignupPage extends StatelessWidget {
                             ),
                             const SizedBox(height: 25),
                             TextField(
+                              controller: _emailController,
                               decoration: const InputDecoration(
                                 labelText: 'Email',
                               ),
@@ -106,6 +134,7 @@ class SignupPage extends StatelessWidget {
                             ),
                             const SizedBox(height: 20),
                             TextField(
+                              controller: _passwordController,
                               decoration: const InputDecoration(
                                 labelText: 'Password',
                               ),
@@ -114,8 +143,13 @@ class SignupPage extends StatelessWidget {
                             ),
                             const SizedBox(height: 20),
                             ElevatedButton(
-                              onPressed: () {},
+                              onPressed: _signup,
                               child: const Text('Sign Up'),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              _message,
+                              style: const TextStyle(color: Color(0xFFF44336)),
                             ),
                           ],
                         ),
