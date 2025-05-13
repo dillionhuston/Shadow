@@ -94,9 +94,6 @@ def create_app():
     app.route('/upload', methods=['POST'])
     @jwt_required()
     def upload_file():
-        if filedata is None:
-            logger.error("no data")
-        else:
             data = request.get_json()
             user_id = get_jwt_identity()
             filename = data.get('fileName')
