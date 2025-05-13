@@ -9,14 +9,14 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   String _message = '';
 
   Future<void> _login() async {
     try {
       final result = await ApiService.login(
-        _emailController.text,
+        _usernameController.text,
         _passwordController.text,
       );
       setState(() {
@@ -126,9 +126,9 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                             const SizedBox(height: 25),
                             TextField(
-                              controller: _emailController,
+                              controller: _usernameController,
                               decoration: const InputDecoration(
-                                labelText: 'Email',
+                                labelText: 'Username',
                               ),
                               style: const TextStyle(color: Color(0xFFFFFFFF)),
                             ),

@@ -133,7 +133,7 @@ class _SignupPageState extends State<SignupPage> {
                                 labelText: 'Username',
                               ),
                               style: const TextStyle(color: Color(0xFFFFFFFF)),
-                              obscureText: true,
+                              obscureText: false,
                             ),
 
                             const SizedBox(height: 25),

@@ -1,6 +1,7 @@
 import os
 import logging
 import io
+import requests
 from flask import Flask, jsonify, request, send_file
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
@@ -25,6 +26,13 @@ def create_app():
     jwt.init_app(app)
     CORS(app, resources={r"/*": {"origins": "*"}})  
     Config.init_app()
+
+
+
+
+    @app.route('/')
+    def home():
+        pass
 
 
     @app.route('/signup', methods=['POST'])
@@ -64,7 +72,9 @@ def create_app():
                 'token': access_token,
                 'user_id': user.id
             }), 200
+        logger.debug(f"New login for {user}")
         return jsonify({'error': 'Invalid username or password'}), 401
+        
     
 
     @app.route('/logout', methods=['POST'])
@@ -79,24 +89,26 @@ def create_app():
         files = File.query.filter_by(user_id=user_id).all()
         files_data = [{'id': f.id, 'filename': f.filename} for f in files]
         return jsonify({'files': files_data}), 200
+        
 
-    @app.route('/upload', methods=['POST'])
+    app.route('/upload', methods=['POST'])
     @jwt_required()
     def upload_file():
-        user_id = get_jwt_identity()
-        if 'file' not in request.files:
-            return jsonify({'error': 'No file part in the request'}), 400
+        if filedata is None:
+            logger.error("no data")
+        else:
+            data = request.get_json()
+            user_id = get_jwt_identity()
+            filename = data.get('fileName')
+            filedata = data.get('fileData')
 
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify({'error': 'No file selected'}), 400
+        if not filename or not filedata:
+            return jsonify({"error": "Missing filename or file data"}), 400
 
-        try:
-            EncryptionService.encrypt(file=file, filename=file.filename, user_id=user_id)
-            return jsonify({'message': 'File uploaded and encrypted successfully'}), 200
-        except Exception as e:
-            logger.error(f"Error in file upload: {str(e)}")
-            return jsonify({'error': f'Error uploading file: {str(e)}'}), 500
+        safe_name = EncryptionService.encrypt(filedata, filename, user_id)
+        return jsonify({"message": "File uploaded and encrypted successfully", "filename": safe_name}), 200
+
+    
 
     @app.route('/download/<int:file_id>', methods=['GET'])
     @jwt_required()
@@ -126,4 +138,4 @@ def create_app():
 
 if __name__ == '__main__':
     app = create_app()
-    app.run(debug=True)
+    app.run(debug=True, host='127.0.0.1', port='5000')
