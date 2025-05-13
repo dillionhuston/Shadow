@@ -9,6 +9,7 @@ class SignupPage extends StatefulWidget {
 }
 
 class _SignupPageState extends State<SignupPage> {
+  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   String _message = '';
@@ -16,6 +17,7 @@ class _SignupPageState extends State<SignupPage> {
   Future<void> _signup() async {
     try {
       final result = await ApiService.signup(
+        _usernameController.text,
         _emailController.text,
         _passwordController.text,
       );
@@ -124,6 +126,16 @@ class _SignupPageState extends State<SignupPage> {
                                 color: Color(0xFF00BCD4),
                               ),
                             ),
+                            const SizedBox(height: 20),
+                            TextField(
+                              controller: _usernameController,
+                              decoration: const InputDecoration(
+                                labelText: 'Username',
+                              ),
+                              style: const TextStyle(color: Color(0xFFFFFFFF)),
+                              obscureText: true,
+                            ),
+
                             const SizedBox(height: 25),
                             TextField(
                               controller: _emailController,
@@ -141,6 +153,7 @@ class _SignupPageState extends State<SignupPage> {
                               style: const TextStyle(color: Color(0xFFFFFFFF)),
                               obscureText: true,
                             ),
+
                             const SizedBox(height: 20),
                             ElevatedButton(
                               onPressed: _signup,
