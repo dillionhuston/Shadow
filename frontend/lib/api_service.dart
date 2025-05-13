@@ -142,7 +142,7 @@ class ApiService {
 
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl/dashboard/upload'),
+        Uri.parse('127.0.0.1:5000/dashboard/upload'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $_token',
