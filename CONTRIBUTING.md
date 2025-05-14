@@ -78,4 +78,4 @@ Thanks for wanting to help build ShadowBox, a privacy-first cloud storage platfo
 - Learn Dart, Python, or decentralized tech.
 - Boost your portfolio with real-world contributions.
 
-Questions? Comment on an issue or join our [Discord/Community] (link coming soon). Happy coding!
+Questions? Comment on an issue or join our [Discord/Community] (https://discord.gg/4a79CNmC). Happy coding!
