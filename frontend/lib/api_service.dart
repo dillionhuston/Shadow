@@ -1,90 +1,82 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 class ApiService {
-  static const String baseUrl =
-      'http://127.0.0.1:5000/'; // Replace with your actual backend URL
+  static const String _baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://192.168.0.14:5000/',
+  );
   static String? _token;
+  static const Duration _timeoutDuration = Duration(
+    seconds: 30,
+  ); // Increased for reliability
 
-  /// Sets the authentication token for API requests
-  static Future<void> setToken(String token) async {
-    _token = token;
+  static void setToken(String token) {
+    if (token.trim().isEmpty) throw ApiException('Invalid token');
+    _token = token.trim();
   }
 
-  /// Clears the authentication token (e.g., on logout)
-  static void clearToken() {
-    _token = null;
-  }
+  static String? getToken() => _token;
 
-  /// Signs up a new user with email and password
-  static Future<Map<String, dynamic>> signup(
-    String username,
-    String email,
-    String password,
-  ) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/signup'),
+  static void clearToken() => _token = null;
+
+  static Future<Map<String, dynamic>> signup({
+    required String username,
+    required String email,
+    required String password,
+  }) async {
+    return _makeRequest(
+      () => http.post(
+        Uri.parse('${_baseUrl}signup'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'username': username,
           'email': email,
           'password': password,
         }),
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return jsonDecode(response.body) as Map<String, dynamic>;
-      } else {
-        throw Exception(
-          'Failed to sign up: ${response.statusCode} - ${response.body}',
-        );
-      }
-    } catch (e) {
-      throw Exception('Signup error: $e');
-    }
+      ),
+      'signup',
+    );
   }
 
-  /// Logs in a user and retrieves an authentication token
-  static Future<Map<String, dynamic>> login(
-    String username,
-    String password,
-  ) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/login'),
+  static Future<Map<String, dynamic>> login({
+    required String username,
+    required String password,
+  }) async {
+    final data = await _makeRequest(
+      () => http.post(
+        Uri.parse('${_baseUrl}login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'username': username, 'password': password}),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body) as Map<String, dynamic>;
-        if (data['token'] != null) {
-          _token = data['token'] as String;
-        }
-        return data;
-      } else {
-        throw Exception(
-          'Failed to login: ${response.statusCode} - ${response.body}',
-        );
-      }
-    } catch (e) {
-      throw Exception('Login error: $e');
-    }
+      ),
+      'login',
+    );
+    if (data['token'] is String) setToken(data['token']);
+    return data;
   }
 
-  /// Changes the user's password
-  static Future<Map<String, dynamic>> changePassword(
-    String currentPassword,
-    String newPassword,
-  ) async {
-    if (_token == null) {
-      throw Exception('No authentication token available. Please login first.');
-    }
+  static Future<void> logout() async {
+    _validateToken();
+    await _makeRequest(
+      () => http.post(
+        Uri.parse('${_baseUrl}logout'),
+        headers: {'Authorization': 'Bearer $_token'},
+      ),
+      'logout',
+    );
+    clearToken();
+  }
 
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/change-password'),
+  static Future<Map<String, dynamic>> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    _validateToken();
+    return _makeRequest(
+      () => http.post(
+        Uri.parse('${_baseUrl}change-password'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $_token',
@@ -93,72 +85,80 @@ class ApiService {
           'currentPassword': currentPassword,
           'newPassword': newPassword,
         }),
-      );
-
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body) as Map<String, dynamic>;
-      } else {
-        throw Exception(
-          'Failed to change password: ${response.statusCode} - ${response.body}',
-        );
-      }
-    } catch (e) {
-      throw Exception('Change password error: $e');
-    }
+      ),
+      'change-password',
+    );
   }
 
-  /// Retrieves the list of files for the dashboard
   static Future<List<dynamic>> getDashboardFiles() async {
-    if (_token == null) {
-      throw Exception('No authentication token available. Please login first.');
-    }
-
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/dashboard'),
+    _validateToken();
+    final data = await _makeRequest(
+      () => http.get(
+        Uri.parse('${_baseUrl}files'),
         headers: {'Authorization': 'Bearer $_token'},
-      );
-
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body) as List<dynamic>;
-      } else {
-        throw Exception(
-          'Failed to load dashboard files: ${response.statusCode} - ${response.body}',
-        );
-      }
-    } catch (e) {
-      throw Exception('Dashboard files error: $e');
-    }
+      ),
+      'dashboard',
+    );
+    return data['files'] ?? [];
   }
 
-  /// Uploads a file to the dashboard
-  static Future<Map<String, dynamic>> uploadFile(
-    String fileName,
-    String fileData,
+  static Future<Map<String, dynamic>> uploadFile({
+    required String fileName,
+    required List<int> fileBytes,
+  }) async {
+    _validateToken();
+    if (fileBytes.isEmpty) throw ApiException('Empty file');
+    final request =
+        http.MultipartRequest('POST', Uri.parse('${_baseUrl}upload'))
+          ..headers['Authorization'] = 'Bearer $_token'
+          ..files.add(
+            http.MultipartFile.fromBytes(
+              'file',
+              fileBytes,
+              filename: fileName,
+              contentType: MediaType('application', 'octet-stream'),
+            ),
+          );
+    final response = await request.send().timeout(_timeoutDuration);
+    final body = await response.stream.bytesToString();
+    final data = jsonDecode(body);
+    if (response.statusCode == 201) return data;
+    if (response.statusCode == 401) clearToken();
+    throw ApiException(
+      data['error'] ?? 'Upload failed: ${response.statusCode}',
+    );
+  }
+
+  static void _validateToken() {
+    if (_token == null || _token!.isEmpty) throw ApiException('Not logged in');
+  }
+
+  static Future<Map<String, dynamic>> _makeRequest(
+    Future<http.Response> Function() requestFn,
+    String endpoint,
   ) async {
-    if (_token == null) {
-      throw Exception('No authentication token available. Please login first.');
-    }
-
     try {
-      final response = await http.post(
-        Uri.parse('127.0.0.1:5000/dashboard/upload'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_token',
-        },
-        body: jsonEncode({'fileName': fileName, 'fileData': fileData}),
+      print('Requesting: $_baseUrl$endpoint');
+      final response = await requestFn().timeout(
+        _timeoutDuration,
+        onTimeout: () => throw ApiException('Timeout on $endpoint'),
       );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return jsonDecode(response.body) as Map<String, dynamic>;
-      } else {
-        throw Exception(
-          'Failed to upload file: ${response.statusCode} - ${response.body}',
-        );
-      }
-    } catch (e) {
-      throw Exception('File upload error: $e');
+      print('Response: ${response.statusCode} ${response.body}');
+      final data = jsonDecode(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) return data;
+      if (response.statusCode == 401) clearToken();
+      throw ApiException(data['error'] ?? 'Failed: ${response.statusCode}');
+    } on SocketException {
+      throw ApiException(
+        'Cannot connect to server. Check server and URL ($_baseUrl).',
+      );
     }
   }
+}
+
+class ApiException implements Exception {
+  final String message;
+  ApiException(this.message);
+  @override
+  String toString() => message;
 }

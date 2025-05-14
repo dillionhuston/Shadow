@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
-import 'homepage.dart';
-import 'signup.dart';
 import 'login.dart';
-import 'change_password.dart';
+import 'signup.dart';
 import 'dashboard.dart';
+import 'change_password.dart';
 
-void main() {
-  runApp(const MyApp());
-}
+void main() => runApp(const MyApp());
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -15,60 +12,49 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Shadowbox',
+      title: 'ShadowBox',
       theme: ThemeData(
-        scaffoldBackgroundColor: const Color(0xFF121212),
         primaryColor: const Color(0xFF00BCD4),
+        scaffoldBackgroundColor: const Color(0xFF121212),
+        cardColor: const Color(0xFF2A2A2A),
         textTheme: const TextTheme(
-          bodyMedium: TextStyle(
-            color: Color(0xFFFFFFFF),
-            fontFamily: 'Segoe UI',
+          headlineSmall: TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
           ),
-          labelLarge: TextStyle(
-            color: Color(0xFF00BCD4),
-            fontFamily: 'Segoe UI',
-          ),
-          headlineMedium: TextStyle(
-            fontSize: 26,
-            color: Color(0xFF00BCD4),
-            fontFamily: 'Segoe UI',
-          ),
+          bodyLarge: TextStyle(color: Colors.white),
+          bodyMedium: TextStyle(color: Colors.white70),
         ),
-        cardTheme: const CardTheme(color: Color(0xFF1E1E1E), elevation: 5),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF03A9F4),
+            backgroundColor: const Color(0xFF00BCD4),
             foregroundColor: Colors.white,
-            textStyle: const TextStyle(fontSize: 16, fontFamily: 'Segoe UI'),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
         ),
         textButtonTheme: TextButtonThemeData(
-          style: TextButton.styleFrom(
-            foregroundColor: const Color(0xFFCCCCCC),
-            textStyle: const TextStyle(fontFamily: 'Segoe UI'),
-          ),
+          style: TextButton.styleFrom(foregroundColor: const Color(0xFF00BCD4)),
         ),
         inputDecorationTheme: const InputDecorationTheme(
-          filled: true,
-          fillColor: Color(0xFF2A2A2A),
-          labelStyle: TextStyle(
-            color: Color(0xFFFFFFFF),
-            fontFamily: 'Segoe UI',
+          labelStyle: TextStyle(color: Colors.white70),
+          border: OutlineInputBorder(),
+          enabledBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Colors.white24),
           ),
-          border: OutlineInputBorder(
-            borderSide: BorderSide(color: Color(0xFF333333)),
-            borderRadius: BorderRadius.all(Radius.circular(5)),
+          focusedBorder: OutlineInputBorder(
+            borderSide: BorderSide(color: Color(0xFF00BCD4)),
           ),
         ),
       ),
-      initialRoute: '/homepage',
+      initialRoute: '/login',
       routes: {
-        '/homepage': (context) => const Homepage(),
-        '/signup': (context) => const SignupPage(),
         '/login': (context) => const LoginPage(),
-        '/change_password': (context) => const ChangePasswordPage(),
+        '/signup': (context) => const SignupPage(),
         '/dashboard': (context) => const DashboardPage(),
+        '/change_password': (context) => const ChangePasswordPage(),
       },
     );
   }
