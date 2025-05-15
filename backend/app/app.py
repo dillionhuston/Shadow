@@ -17,6 +17,7 @@ db.init_app(app)
 jwt = JWTManager(app)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
+# checks if server is alive 
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({'status': 'healthy'}), 200
