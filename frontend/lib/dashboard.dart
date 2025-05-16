@@ -75,9 +75,6 @@ class _DashboardPageState extends State<DashboardPage> {
       final response = await ApiService.uploadFile(
         fileName: file.name,
         fileBytes: file.bytes!,
-      ).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () => throw ApiException('Upload timed out'),
       );
 
       setState(() {
@@ -88,7 +85,7 @@ class _DashboardPageState extends State<DashboardPage> {
       await _fetchFiles();
     } catch (e) {
       setState(() {
-        _message = 'Upload failed: $e';
+        _message = 'Upload failed: $e. Tap Retry or check connection.';
         _isUploading = false;
       });
     }
@@ -98,34 +95,31 @@ class _DashboardPageState extends State<DashboardPage> {
   Future<void> _fetchFiles() async {
     setState(() {
       _isFetching = true;
-      _message = '';
+      _message = 'Loading files...';
     });
 
     try {
       final files = await ApiService.getDashboardFiles();
+      print('Fetched dashboard files: $files'); // Debug log
       setState(() {
         _files = files;
-        _message = _files.isEmpty ? 'No files available' : 'Files loaded';
+        _message =
+            _files.isEmpty
+                ? 'No files available. Try uploading one.'
+                : 'Files loaded successfully';
         _isFetching = false;
       });
     } catch (e) {
       setState(() {
-        _message = 'Failed to load files: $e';
+        _message = 'Failed to load files: $e. Tap Retry or check connection.';
         _isFetching = false;
       });
     }
   }
 
-  /// Download a file from the server.
+  /// Download a file from the server (placeholder).
   Future<void> _downloadFile(int fileId, String filename) async {
-    setState(() => _message = 'Downloading $filename...');
-    try {
-      // Note: Actual download implementation requires platform-specific code
-      // (e.g., saving to device storage). This is a placeholder.
-      setState(() => _message = 'Download initiated for $filename');
-    } catch (e) {
-      setState(() => _message = 'Download failed: $e');
-    }
+    setState(() => _message = 'Downloading $filename not implemented yet.');
   }
 
   /// Handle user logout.
@@ -168,6 +162,11 @@ class _DashboardPageState extends State<DashboardPage> {
                   route: '/dashboard',
                   icon: Icons.dashboard,
                   isActive: true,
+                ),
+                _buildSidebarButton(
+                  label: 'Files',
+                  route: '/files',
+                  icon: Icons.folder,
                 ),
                 _buildSidebarButton(
                   label: 'Settings',
@@ -316,7 +315,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                         ),
                                         child: ListTile(
                                           title: Text(
-                                            file['filename'],
+                                            file['filename'] ?? 'Unknown File',
                                             style: const TextStyle(
                                               color: kTextColor,
                                             ),
@@ -334,8 +333,8 @@ class _DashboardPageState extends State<DashboardPage> {
                                             ),
                                             onPressed:
                                                 () => _downloadFile(
-                                                  file['id'],
-                                                  file['filename'],
+                                                  file['id'] ?? 0,
+                                                  file['filename'] ?? 'unknown',
                                                 ),
                                           ),
                                         ),

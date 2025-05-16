@@ -16,13 +16,13 @@ class FileStorageService:
         if not file_data:
             logger.error("No file data provided.")
             raise ValueError("No file data provided.")
-
         path = os.path.join(Config.ENCRYPTED_FILE_PATH, filename)
         try:
             with open(path, 'wb') as file:
                 file.write(file_data)
             logger.info(f"File saved: {path}")
         except Exception as e:
+
             logger.error(f"Failed to save file {filename}: {e}")
             raise
 
@@ -33,6 +33,7 @@ class FileStorageService:
                 data = file.read()
             logger.info(f"File retrieved: {filepath}")
             return data
+        
         except Exception as e:
             logger.error(f"Failed to retrieve file {filepath}: {e}")
             raise

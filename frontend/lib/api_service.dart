@@ -6,12 +6,11 @@ import 'package:http_parser/http_parser.dart';
 class ApiService {
   static const String _baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://192.168.0.14:5000/',
+    defaultValue: 'http://127.0.0.1:5000/',
   );
   static String? _token;
-  static const Duration _timeoutDuration = Duration(
-    seconds: 30,
-  ); // Increased for reliability
+  static const Duration _timeoutDuration = Duration(seconds: 45);
+  static const int _maxRetries = 3;
 
   static void setToken(String token) {
     if (token.trim().isEmpty) throw ApiException('Invalid token');
@@ -27,7 +26,7 @@ class ApiService {
     required String email,
     required String password,
   }) async {
-    return _makeRequest(
+    final data = await _makeRequest(
       () => http.post(
         Uri.parse('${_baseUrl}signup'),
         headers: {'Content-Type': 'application/json'},
@@ -39,6 +38,7 @@ class ApiService {
       ),
       'signup',
     );
+    return data;
   }
 
   static Future<Map<String, dynamic>> login({
@@ -74,7 +74,7 @@ class ApiService {
     required String newPassword,
   }) async {
     _validateToken();
-    return _makeRequest(
+    final data = await _makeRequest(
       () => http.post(
         Uri.parse('${_baseUrl}change-password'),
         headers: {
@@ -88,16 +88,29 @@ class ApiService {
       ),
       'change-password',
     );
+    return data;
   }
 
   static Future<List<dynamic>> getDashboardFiles() async {
     _validateToken();
     final data = await _makeRequest(
       () => http.get(
-        Uri.parse('${_baseUrl}files'),
+        Uri.parse('${_baseUrl}dashboard'),
         headers: {'Authorization': 'Bearer $_token'},
       ),
       'dashboard',
+    );
+    return data['files'] ?? [];
+  }
+
+  static Future<List<dynamic>> getServerFiles() async {
+    _validateToken();
+    final data = await _makeRequest(
+      () => http.get(
+        Uri.parse('${_baseUrl}files'),
+        headers: {'Authorization': 'Bearer $_token'},
+      ),
+      'files',
     );
     return data['files'] ?? [];
   }
@@ -137,22 +150,39 @@ class ApiService {
     Future<http.Response> Function() requestFn,
     String endpoint,
   ) async {
-    try {
-      print('Requesting: $_baseUrl$endpoint');
-      final response = await requestFn().timeout(
-        _timeoutDuration,
-        onTimeout: () => throw ApiException('Timeout on $endpoint'),
-      );
-      print('Response: ${response.statusCode} ${response.body}');
-      final data = jsonDecode(response.body);
-      if (response.statusCode >= 200 && response.statusCode < 300) return data;
-      if (response.statusCode == 401) clearToken();
-      throw ApiException(data['error'] ?? 'Failed: ${response.statusCode}');
-    } on SocketException {
-      throw ApiException(
-        'Cannot connect to server. Check server and URL ($_baseUrl).',
-      );
+    for (int attempt = 1; attempt <= _maxRetries; attempt++) {
+      try {
+        print('Attempt $attempt: Requesting $_baseUrl$endpoint');
+        final response = await requestFn().timeout(
+          _timeoutDuration,
+          onTimeout: () {
+            print('Timeout on $endpoint (attempt $attempt)');
+            throw ApiException('Timeout on $endpoint');
+          },
+        );
+        print('Response: ${response.statusCode} ${response.body}');
+        try {
+          final data = jsonDecode(response.body);
+          if (response.statusCode >= 200 && response.statusCode < 300)
+            return data;
+          if (response.statusCode == 401) clearToken();
+          throw ApiException(data['error'] ?? 'Failed: ${response.statusCode}');
+        } on FormatException {
+          throw ApiException('Invalid JSON response: ${response.body}');
+        }
+      } on SocketException catch (e) {
+        print('SocketException on $endpoint (attempt $attempt): $e');
+        if (attempt == _maxRetries) {
+          throw ApiException(
+            'Cannot connect to server. Check URL ($_baseUrl) or server status.',
+          );
+        }
+      }
+      await Future.delayed(
+        Duration(seconds: attempt * 2),
+      ); // Exponential backoff
     }
+    throw ApiException('Failed after $_maxRetries attempts.');
   }
 }
 

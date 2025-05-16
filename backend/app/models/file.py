@@ -1,15 +1,21 @@
 from models.db import db
+from datetime import datetime
 
 class File(db.Model):
     __tablename__ = 'files'
-
     id = db.Column(db.Integer, primary_key=True)
-    filename = db.Column(db.String(128), nullable=False)
-    filepath = db.Column(db.String(256), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=False)
+    filename = db.Column(db.String(255), nullable=False)
+    filepath = db.Column(db.String(255), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+    def __repr__(self):
+        return f"<File {self.filename}>"
 
     def add_file(self, filename, filepath, user_id):
-        file = File(filename=filename, filepath=filepath, user_id=user_id)
+        file = File(filename=filename, filepath=filepath, user_id=user_id,)
         db.session.add(file)
         db.session.commit()
-        return file
+        return 
+    
