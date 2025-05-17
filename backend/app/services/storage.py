@@ -1,6 +1,6 @@
 import os
 import logging
-from config import Config
+from backend.app.config import Config
 from models.file import File
 
 logger = logging.getLogger(__name__)

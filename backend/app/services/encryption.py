@@ -1,7 +1,7 @@
 from Crypto.Cipher import AES
 from Crypto.Protocol.KDF import PBKDF2
 from Crypto.Random import get_random_bytes
-from config import Config
+from backend.app.config import Config
 import base64
 import os
 import hashlib
@@ -22,6 +22,7 @@ class EncryptionService:
                 key = key.encode('utf-8')
             salt = hashlib.sha256(user_id.encode('utf-8')).digest()
             print(f"Encrypt - user_id: {user_id}, salt (hex): {salt.hex()}")
+
             derived_key = PBKDF2(key, salt, dkLen=32, count=100000)
             derived_key = derived_key[:32]
             key_hash = hashlib.sha256(derived_key).digest()

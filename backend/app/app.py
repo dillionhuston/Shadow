@@ -8,7 +8,7 @@ from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from io import BytesIO
 
-from config import Config
+from backend.app.config import Config
 from models.user import User
 from models.file import File
 from models.db import db
