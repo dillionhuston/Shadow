@@ -90,6 +90,11 @@ class _LoginPageState extends State<LoginPage> {
         );
         if (!mounted) return;
         developer.log('Login successful: $result');
+        final token = result['token'] as String? ?? '';
+        final userId = result['user_id']?.toString() ?? username;
+        developer.log(
+          'Navigating to dashboard with userId: $userId, token: $token',
+        );
         setState(() => _message = result['message'] ?? 'Login successful');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -101,6 +106,7 @@ class _LoginPageState extends State<LoginPage> {
           context,
           '/dashboard',
           (route) => false,
+          arguments: {'userId': userId, 'token': token},
         );
         return;
       } catch (e) {

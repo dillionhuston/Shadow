@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:universal_html/html.dart' as html;
+
 import 'api_service.dart';
 
 // Constants for UI
@@ -13,7 +15,10 @@ const kTextColor = Colors.white;
 const kSecondaryTextColor = Colors.white70;
 
 class DashboardPage extends StatefulWidget {
-  const DashboardPage({super.key});
+  final String userId;
+  final String token;
+
+  const DashboardPage({required this.userId, required this.token, super.key});
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -28,6 +33,9 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
+    // Set the token in ApiService
+    print('Setting token in DashboardPage: ${widget.token}');
+    ApiService.setToken(widget.token);
     _initialize();
   }
 
@@ -75,6 +83,7 @@ class _DashboardPageState extends State<DashboardPage> {
       final response = await ApiService.uploadFile(
         fileName: file.name,
         fileBytes: file.bytes!,
+        token: widget.token,
       );
 
       setState(() {
@@ -100,7 +109,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
     try {
       final files = await ApiService.getDashboardFiles();
-      print('Fetched dashboard files: $files'); // Debug log
+      print('Fetched dashboard files: $files');
       setState(() {
         _files = files;
         _message =
@@ -117,15 +126,53 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  /// Download a file from the server (placeholder).
+  /// Download a file from the server.
   Future<void> _downloadFile(int fileId, String filename) async {
-    setState(() => _message = 'Downloading $filename not implemented yet.');
+    setState(() => _message = 'Downloading $filename...');
+    try {
+      final response = await ApiService.downloadFile(fileId);
+      print(
+        'Download response status: ${response.statusCode}, body length: ${response.bodyBytes.length}',
+      );
+      if (response.statusCode == 200) {
+        // Determine MIME type based on file extension
+        final extension = filename.split('.').last.toLowerCase();
+        final mimeTypes = {
+          'txt': 'text/plain',
+          'pdf': 'application/pdf',
+          'doc': 'application/msword',
+          'docx':
+              'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        };
+        final mimeType = mimeTypes[extension] ?? 'application/octet-stream';
+
+        // Create Blob with MIME type
+        final blob = html.Blob([response.bodyBytes], mimeType);
+        final url = html.Url.createObjectUrlFromBlob(blob);
+        final anchor =
+            html.AnchorElement(href: url)
+              ..setAttribute('download', filename)
+              ..style.display = 'none';
+        html.document.body?.append(anchor);
+        anchor.click();
+        anchor.remove();
+        html.Url.revokeObjectUrl(url);
+        setState(() => _message = 'Download completed for $filename');
+        print('Download triggered for $filename with MIME type: $mimeType');
+      } else {
+        setState(() => _message = 'Download failed: ${response.body}');
+        print('Download failed: ${response.body}');
+      }
+    } catch (e) {
+      setState(() => _message = 'Download error: $e');
+      print('Download error: $e');
+    }
   }
 
   /// Handle user logout.
   Future<void> _logout() async {
     try {
-      await ApiService.logout();
+      await ApiService.logout(token: widget.token);
       if (!mounted) return;
       Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
     } catch (e) {
@@ -195,7 +242,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
                       Text(
-                        'Hello, User',
+                        'Hello, ${widget.userId.isNotEmpty ? widget.userId : "User"}',
                         style: theme.textTheme.bodyLarge?.copyWith(
                           color: kTextColor,
                         ),

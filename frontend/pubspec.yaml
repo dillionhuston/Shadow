@@ -30,6 +30,7 @@ environment:
 dependencies:
   http: ^1.2.0
   file_picker: ^10.1.9
+  universal_html: ^2.2.4
   flutter:
     sdk: flutter
 

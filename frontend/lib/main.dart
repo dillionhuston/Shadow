@@ -50,7 +50,14 @@ class MyApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginPage(),
         '/signup': (context) => const SignupPage(),
-        '/dashboard': (context) => const DashboardPage(),
+        '/dashboard': (context) {
+          final args =
+              ModalRoute.of(context)!.settings.arguments
+                  as Map<String, String>?;
+          final userId = args?['userId'] ?? '';
+          final token = args?['token'] ?? '';
+          return DashboardPage(userId: userId, token: token);
+        },
         '/files': (context) => const FilesPage(),
         '/change_password': (context) => const ChangePasswordPage(),
       },

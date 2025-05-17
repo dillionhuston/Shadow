@@ -4,8 +4,9 @@ from datetime import datetime
 class File(db.Model):
     __tablename__ = 'files'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.String(36), db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.String, db.ForeignKey('user.id'), nullable=False)
     filename = db.Column(db.String(255), nullable=False)
+    original_filename = db.Column(db.String(255), nullable=True)  # Nullable for existing files
     filepath = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
