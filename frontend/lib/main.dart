@@ -53,7 +53,6 @@ class MyApp extends StatelessWidget {
         '/dashboard': (context) => const DashboardPage(),
         '/files': (context) => const FilesPage(),
         '/change_password': (context) => const ChangePasswordPage(),
-        '/files: (context) => const FilePage(),
       },
     );
   }
