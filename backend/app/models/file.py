@@ -1,4 +1,4 @@
-from models.db import db
+from .db import db
 from datetime import datetime
 
 class File(db.Model):

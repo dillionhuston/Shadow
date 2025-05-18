@@ -1,28 +1,29 @@
-from models.db import db
+from .db import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 import uuid
 import os
 
 class User(db.Model):
-    __tablename__ = 'user' 
-    id = db.Column(db.String(36), primary_key=True)
+    __tablename__ = 'user'
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(128), nullable=False)
-    key = db.Column(db.String(32), nullable=False)  
+    key = db.Column(db.String(32), nullable=False, default=lambda: os.urandom(32).hex()[:32]) # generate a key just incase one is not generated
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     @staticmethod
     def add_user(username, email, password):
         user = User(
-            id=str(uuid.uuid4()),
+            id=str(uuid.uuid4()),  
             username=username,
             email=email,
             password=User.generate_hash(password),
-            key=os.urandom(32).hex()[:32]  
+            key=os.urandom(32).hex()[:32]
         )
         db.session.add(user)
+        db.session.commit()  
         return user
 
     @staticmethod

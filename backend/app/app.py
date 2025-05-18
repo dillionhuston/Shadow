@@ -8,11 +8,11 @@ from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from io import BytesIO
 
-from backend.app.config import Config
-from models.user import User
-from models.file import File
-from models.db import db
-from services.encryption import EncryptionService
+from .config import Config
+from .models.user import User
+from .models.file import File
+from .models.db import db
+from .services.encryption import EncryptionService
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -101,7 +101,7 @@ def dashboard():
     except Exception as e:
         print(f"[dashboard] Error: {e}")
         return jsonify({'error': 'Failed to fetch files'}), 500
-
+    
 @app.route('/upload', methods=['POST'])
 @jwt_required()
 def upload_file():
