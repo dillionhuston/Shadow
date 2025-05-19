@@ -1,7 +1,8 @@
 from Crypto.Cipher import AES
 from Crypto.Protocol.KDF import PBKDF2
 from Crypto.Random import get_random_bytes
-from backend.app.config import Config
+from Crypto.Util.Padding import unpad
+from config import Config
 import base64
 import os
 import hashlib
@@ -9,6 +10,9 @@ import hashlib
 class EncryptionService:
     class EncryptionError(Exception):
         pass
+
+    # hardcoded key to match the client, never use this on public servers 
+    LOGIN_ENCRYPTION_KEY = b'my32lengthkeyforAES256!!!12345678'  
 
     @staticmethod
     def encrypt(data, filename, user_id, key):
@@ -89,3 +93,21 @@ class EncryptionService:
 
         except (OSError, ValueError, EncryptionService.EncryptionError) as e:
             raise EncryptionService.EncryptionError(f"Decryption failed: {str(e)}")
+
+    @staticmethod
+    def decrypt_credentials(encrypted_data, iv_base64):
+       #decrypt the login credentials
+        try:
+            iv = base64.b64decode(iv_base64)
+            if len(iv) != 16:
+                raise EncryptionService.EncryptionError("Invalid IV length")
+
+            encrypted_bytes = base64.b64decode(encrypted_data)
+            cipher = AES.new(EncryptionService.LOGIN_ENCRYPTION_KEY, AES.MODE_CBC, iv=iv)
+            decrypted_bytes = unpad(cipher.decrypt(encrypted_bytes), AES.block_size)
+            return decrypted_bytes.decode('utf-8')
+
+        except (base64.binascii.Error, ValueError, UnicodeDecodeError) as e:
+            raise EncryptionService.EncryptionError(f"Credential decryption failed: {str(e)}")
+        except Exception as e:
+            raise EncryptionService.EncryptionError(f"Internal error during credential decryption: {str(e)}")

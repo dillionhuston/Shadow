@@ -7,12 +7,14 @@ from flask_jwt_extended import JWTManager, jwt_required, create_access_token, ge
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from io import BytesIO
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import unpad
 
-from .config import Config
-from .models.user import User
-from .models.file import File
-from .models.db import db
-from .services.encryption import EncryptionService
+from config import Config
+from models.user import User
+from models.file import File
+from models.db import db
+from services.encryption import EncryptionService
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -20,6 +22,10 @@ app.config.from_object(Config)
 db.init_app(app)
 jwt = JWTManager(app)
 CORS(app, resources={r"/*": {"origins": "*"}})
+
+# Encryption key and setup (should match the client)
+ENCRYPTION_KEY = b'my32lengthkeyforAES256!!!1234567'  # 32 bytes for AES-256
+encrypter = AES.new(ENCRYPTION_KEY, AES.MODE_CBC)
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -48,15 +54,30 @@ def signup():
 @app.route('/login', methods=['POST'])
 def login():
     payload = request.get_json() or {}
-    username = payload.get('username')
-    password = payload.get('password')
+    encrypted_username = payload.get('username')
+    encrypted_password = payload.get('password')
+    iv_base64 = payload.get('iv')
 
-    user = User.query.filter_by(username=username).first()
-    if user and User.verify_hash(password, user.password):
-        token = create_access_token(identity=str(user.id))
-        return jsonify({'message': 'Success', 'token': token, 'user_id': str(user.id)}), 200
+    if not all([encrypted_username, encrypted_password, iv_base64]):
+        return jsonify({'error': 'Missing encrypted fields or IV'}), 400
 
-    return jsonify({'error': 'Invalid credentials'}), 401
+    try:
+        # Decrypt username and password using EncryptionService
+        username = EncryptionService.decrypt_credentials(encrypted_username, iv_base64)
+        password = EncryptionService.decrypt_credentials(encrypted_password, iv_base64)
+
+        user = User.query.filter_by(username=username).first()
+        if user and User.verify_hash(password, user.password):
+            token = create_access_token(identity=str(user.id))
+            return jsonify({'message': 'Success', 'token': token, 'user_id': str(user.id)}), 200
+
+        return jsonify({'error': 'Invalid credentials'}), 401
+
+    except EncryptionService.EncryptionError as e:
+        return jsonify({'error': f'Decryption failed: {str(e)}'}), 400
+    except Exception as e:
+        return jsonify({'error': f'Internal error: {str(e)}'}), 500
+    
 
 @app.route('/logout', methods=['POST'])
 @jwt_required()

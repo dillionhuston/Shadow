@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+import 'package:encrypt/encrypt.dart' as encrypt;
 
 class ApiService {
   static const String _baseUrl = String.fromEnvironment(
@@ -11,6 +12,16 @@ class ApiService {
   static String? _token;
   static const Duration _timeoutDuration = Duration(seconds: 45);
   static const int _maxRetries = 3;
+
+  // Encryption setup: Define the key as raw bytes to ensure 32 bytes (256 bits)
+  static final _encryptionKey = encrypt.Key(
+    Uint8List.fromList(
+      'my32lengthkeyforAES256!!!12345678'
+          .codeUnits, // Convert string to bytes explicitly
+    ),
+  );
+  static final _iv = encrypt.IV.fromLength(16); // 16 bytes for AES
+  static final _encrypter = encrypt.Encrypter(encrypt.AES(_encryptionKey));
 
   static void setToken(String token) {
     if (token.trim().isEmpty) throw ApiException('Invalid token');
@@ -46,11 +57,23 @@ class ApiService {
     required String password,
   }) async {
     print('Attempting login to ${_baseUrl}login with username: $username');
+
+    // Debug: Print key length to verify
+    print('Encryption key length: ${_encryptionKey.bytes.length} bytes');
+
+    // Encrypt the username and password
+    final encryptedUsername = _encrypter.encrypt(username, iv: _iv).base64;
+    final encryptedPassword = _encrypter.encrypt(password, iv: _iv).base64;
+
     final data = await _makeRequest(
       () => http.post(
         Uri.parse('${_baseUrl}login'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'username': username, 'password': password}),
+        body: jsonEncode({
+          'username': encryptedUsername,
+          'password': encryptedPassword,
+          'iv': _iv.base64, // Send IV for server-side decryption
+        }),
       ),
       'login',
     );
