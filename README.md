@@ -13,7 +13,7 @@ This is an early version, but it works. You can use it as-is, improve it, or tak
 ---
 
 ## Features
-
+- Files synchronous on all devices with same account
 - AES-256 encrypted uploads — files are stored encrypted, not raw
 - Decryption only happens when a file is downloaded
 - Simple Flask-based backend you can run anywhere
