@@ -60,7 +60,6 @@ class MyApp extends StatelessWidget {
         },
         '/files': (context) => const FilesPage(),
         '/change_password': (context) => const ChangePasswordPage(),
-        '/settings': (context) => const ChangePasswordPage(),
       },
     );
   }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'api_service.dart';
 import 'dart:developer' as developer;
 
-// UI Constants
+// UI Constants from DashboardPage
 const kPrimaryColor = Color(0xFF00BCD4);
 const kBackgroundColor = Color(0xFF121212);
 const kHeaderColor = Color(0xFF1F1F1F);
@@ -31,12 +31,14 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
+  /// Handle login request with retries
   Future<void> _login() async {
     if (_isLoading) return;
 
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
 
+    // Validate inputs
     if (username.isEmpty || password.isEmpty) {
       setState(() => _message = 'Username and password are required');
       ScaffoldMessenger.of(context).showSnackBar(
@@ -134,11 +136,12 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      color: kBackgroundColor,
+      color: kBackgroundColor, // Fallback background
       child: Scaffold(
         backgroundColor: kBackgroundColor,
         body: Column(
           children: [
+            // Header
             Container(
               height: 70,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -164,6 +167,7 @@ class _LoginPageState extends State<LoginPage> {
                 ],
               ),
             ),
+            // Main Content
             Expanded(
               child: Center(
                 child: ConstrainedBox(
@@ -253,6 +257,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
             ),
+            // Footer
             Container(
               padding: const EdgeInsets.all(10),
               color: kBackgroundColor,

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'api_service.dart';
+import 'dart:developer' as developer;
 
-// UI Constants
+// UI Constants from DashboardPage
 const kPrimaryColor = Color(0xFF00BCD4);
 const kBackgroundColor = Color(0xFF121212);
 const kHeaderColor = Color(0xFF1F1F1F);
@@ -22,6 +23,7 @@ class _SignupPageState extends State<SignupPage> {
   final _passwordController = TextEditingController();
   String _message = '';
   bool _isSubmitting = false;
+  static const int _maxRetries = 3;
 
   @override
   void dispose() {
@@ -31,6 +33,7 @@ class _SignupPageState extends State<SignupPage> {
     super.dispose();
   }
 
+  /// Handle signup request with retries
   Future<void> _signup() async {
     if (_isSubmitting) return;
 
@@ -38,16 +41,35 @@ class _SignupPageState extends State<SignupPage> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
+    // Validate inputs
     if (username.isEmpty || email.isEmpty || password.isEmpty) {
-      setState(() => _message = 'All fields are required');
+      setState(() => _message = 'Username, email, and password are required');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Username, email, and password are required'),
+          backgroundColor: kErrorColor,
+        ),
+      );
       return;
     }
     if (username.length < 3) {
       setState(() => _message = 'Username must be 3+ characters');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Username must be 3+ characters'),
+          backgroundColor: kErrorColor,
+        ),
+      );
       return;
     }
     if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
       setState(() => _message = 'Invalid email format');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid email format'),
+          backgroundColor: kErrorColor,
+        ),
+      );
       return;
     }
     if (password.length < 8 ||
@@ -57,50 +79,76 @@ class _SignupPageState extends State<SignupPage> {
             _message =
                 'Password must be 8+ characters with letters and numbers',
       );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Password must be 8+ characters with letters and numbers',
+          ),
+          backgroundColor: kErrorColor,
+        ),
+      );
       return;
     }
 
     setState(() {
       _isSubmitting = true;
-      _message = 'Signing up...';
+      _message = '';
     });
 
-    try {
-      final response = await ApiService.signup(
-        username: username,
-        email: email,
-        password: password,
-      );
-
-      if (!mounted) return;
-
-      setState(() {
-        _message = response['message'] ?? 'Signup successful';
-        _usernameController.clear();
-        _emailController.clear();
-        _passwordController.clear();
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_message), backgroundColor: kPrimaryColor),
-      );
-      Navigator.pushNamed(context, '/login');
-    } catch (e) {
-      setState(() {
-        _message = 'Signup error: $e';
-        _isSubmitting = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_message), backgroundColor: kErrorColor),
-      );
+    for (int attempt = 1; attempt <= _maxRetries; attempt++) {
+      try {
+        final result = await ApiService.signup(
+          username: username,
+          email: email,
+          password: password,
+        );
+        if (!mounted) return;
+        developer.log('Signup successful: $result');
+        setState(() {
+          _message = result['message'] ?? 'Signup successful';
+          _usernameController.clear();
+          _emailController.clear();
+          _passwordController.clear();
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Signup successful'),
+            backgroundColor: kPrimaryColor,
+          ),
+        );
+        Navigator.pushNamed(context, '/login');
+        return;
+      } catch (e) {
+        final errorMessage = e.toString().replaceAll('ApiException: ', '');
+        developer.log('Signup attempt $attempt failed: $errorMessage');
+        setState(() {
+          _message = 'Error (Attempt $attempt/$_maxRetries): $errorMessage';
+        });
+        if (attempt == _maxRetries) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Signup failed: $errorMessage'),
+              backgroundColor: kErrorColor,
+            ),
+          );
+        }
+        await Future.delayed(
+          Duration(seconds: attempt * 2),
+        ); // Exponential backoff
+      } finally {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       backgroundColor: kBackgroundColor,
       body: Column(
         children: [
+          // Header
           Container(
             height: 70,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -118,11 +166,15 @@ class _SignupPageState extends State<SignupPage> {
                 ),
                 TextButton(
                   onPressed: () => Navigator.pushNamed(context, '/login'),
-                  child: const Text('Log In'),
+                  child: const Text(
+                    'Log In',
+                    style: TextStyle(color: kPrimaryColor),
+                  ),
                 ),
               ],
             ),
           ),
+          // Main Content
           Expanded(
             child: Center(
               child: ConstrainedBox(
@@ -136,12 +188,11 @@ class _SignupPageState extends State<SignupPage> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Text(
+                        Text(
                           'Sign Up',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
+                          style: theme.textTheme.headlineSmall?.copyWith(
                             color: kPrimaryColor,
+                            fontWeight: FontWeight.bold,
                           ),
                           textAlign: TextAlign.center,
                         ),
@@ -151,7 +202,14 @@ class _SignupPageState extends State<SignupPage> {
                           decoration: const InputDecoration(
                             labelText: 'Username',
                             border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.person),
+                            prefixIcon: Icon(Icons.person, color: kTextColor),
+                            labelStyle: TextStyle(color: kTextColor),
+                            enabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: kTextColor),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: kPrimaryColor),
+                            ),
                           ),
                           style: const TextStyle(color: kTextColor),
                         ),
@@ -161,7 +219,14 @@ class _SignupPageState extends State<SignupPage> {
                           decoration: const InputDecoration(
                             labelText: 'Email',
                             border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.email),
+                            prefixIcon: Icon(Icons.email, color: kTextColor),
+                            labelStyle: TextStyle(color: kTextColor),
+                            enabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: kTextColor),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: kPrimaryColor),
+                            ),
                           ),
                           style: const TextStyle(color: kTextColor),
                           keyboardType: TextInputType.emailAddress,
@@ -172,7 +237,14 @@ class _SignupPageState extends State<SignupPage> {
                           decoration: const InputDecoration(
                             labelText: 'Password',
                             border: OutlineInputBorder(),
-                            prefixIcon: Icon(Icons.lock),
+                            prefixIcon: Icon(Icons.lock, color: kTextColor),
+                            labelStyle: TextStyle(color: kTextColor),
+                            enabledBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: kTextColor),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: BorderSide(color: kPrimaryColor),
+                            ),
                           ),
                           style: const TextStyle(color: kTextColor),
                           obscureText: true,
@@ -180,20 +252,29 @@ class _SignupPageState extends State<SignupPage> {
                         const SizedBox(height: 20),
                         ElevatedButton(
                           onPressed: _isSubmitting ? null : _signup,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: kPrimaryColor,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
                           child:
                               _isSubmitting
                                   ? const CircularProgressIndicator(
                                     color: kTextColor,
                                   )
-                                  : const Text('Sign Up'),
+                                  : const Text(
+                                    'Sign Up',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      color: kTextColor,
+                                    ),
+                                  ),
                         ),
                         const SizedBox(height: 12),
-                        if (_message.isNotEmpty)
-                          Text(
-                            _message,
-                            style: const TextStyle(color: kErrorColor),
-                            textAlign: TextAlign.center,
-                          ),
+                        Text(
+                          _message,
+                          style: const TextStyle(color: kErrorColor),
+                          textAlign: TextAlign.center,
+                        ),
                       ],
                     ),
                   ),
@@ -201,6 +282,7 @@ class _SignupPageState extends State<SignupPage> {
               ),
             ),
           ),
+          // Footer
           Container(
             padding: const EdgeInsets.all(10),
             color: kBackgroundColor,

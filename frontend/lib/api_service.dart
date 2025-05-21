@@ -2,25 +2,15 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
-import 'package:encrypt/encrypt.dart' as encrypt;
 
 class ApiService {
   static const String _baseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: 'http://127.0.0.1:5000/',
   );
-
   static String? _token;
   static const Duration _timeoutDuration = Duration(seconds: 45);
   static const int _maxRetries = 3;
-  static final _encryptionKey = encrypt.Key.fromUtf8(
-    '12345678901234567890123456789012', // 32 chars
-  );
-
-  static final _iv = encrypt.IV.fromLength(128); // 16 bytes for AES
-
-  // ✅ Now this works fine
-  static final _encrypter = encrypt.Encrypter(encrypt.AES(_encryptionKey));
 
   static void setToken(String token) {
     if (token.trim().isEmpty) throw ApiException('Invalid token');
@@ -36,19 +26,14 @@ class ApiService {
     required String email,
     required String password,
   }) async {
-    final encryptedUsername = _encrypter.encrypt(username, iv: _iv).base64;
-    final encryptedEmail = _encrypter.encrypt(email, iv: _iv).base64;
-    final encryptedPassword = _encrypter.encrypt(password, iv: _iv).base64;
-
     final data = await _makeRequest(
       () => http.post(
         Uri.parse('${_baseUrl}signup'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
-          'username': encryptedUsername,
-          'email': encryptedEmail,
-          'password': encryptedPassword,
-          'encryption_key': _iv.base64,
+          'username': username,
+          'email': email,
+          'password': password,
         }),
       ),
       'signup',
@@ -60,22 +45,17 @@ class ApiService {
     required String username,
     required String password,
   }) async {
-    final encryptedUsername = _encrypter.encrypt(username, iv: _iv).base64;
-    final encryptedPassword = _encrypter.encrypt(password, iv: _iv).base64;
-
+    print('Attempting login to ${_baseUrl}login with username: $username');
     final data = await _makeRequest(
       () => http.post(
         Uri.parse('${_baseUrl}login'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'username': encryptedUsername,
-          'password': encryptedPassword,
-          'iv': _iv.base64,
-        }),
+        body: jsonEncode({'username': username, 'password': password}),
       ),
       'login',
     );
     if (data['token'] is String) setToken(data['token']);
+    print('Login successful, token set');
     return data;
   }
 
@@ -146,7 +126,6 @@ class ApiService {
     final authToken = token ?? _token;
     _validateToken(authToken);
     if (fileBytes.isEmpty) throw ApiException('Empty file');
-
     final request =
         http.MultipartRequest('POST', Uri.parse('${_baseUrl}upload'))
           ..headers['Authorization'] = 'Bearer $authToken'
@@ -158,7 +137,6 @@ class ApiService {
               contentType: MediaType('application', 'octet-stream'),
             ),
           );
-
     final response = await request.send().timeout(_timeoutDuration);
     final body = await response.stream.bytesToString();
     final data = jsonDecode(body);
@@ -182,9 +160,8 @@ class ApiService {
 
   static void _validateToken([String? token]) {
     final authToken = token ?? _token;
-    if (authToken == null || authToken.isEmpty) {
+    if (authToken == null || authToken.isEmpty)
       throw ApiException('Not logged in');
-    }
   }
 
   static Future<Map<String, dynamic>> _makeRequest(
@@ -193,24 +170,35 @@ class ApiService {
   ) async {
     for (int attempt = 1; attempt <= _maxRetries; attempt++) {
       try {
+        print('Attempt $attempt: Requesting ${_baseUrl}$endpoint');
         final response = await requestFn().timeout(
           _timeoutDuration,
-          onTimeout: () => throw ApiException('Timeout on $endpoint'),
+          onTimeout: () {
+            print('Timeout on $endpoint (attempt $attempt)');
+            throw ApiException('Timeout on $endpoint');
+          },
         );
-        final data = jsonDecode(response.body);
-        if (response.statusCode >= 200 && response.statusCode < 300) {
-          return data;
+        print('Response: ${response.statusCode} ${response.body}');
+        try {
+          final data = jsonDecode(response.body);
+          if (response.statusCode >= 200 && response.statusCode < 300)
+            return data;
+          if (response.statusCode == 401) clearToken();
+          throw ApiException(data['error'] ?? 'Failed: ${response.statusCode}');
+        } on FormatException {
+          throw ApiException('Invalid JSON response: ${response.body}');
         }
-        if (response.statusCode == 401) clearToken();
-        throw ApiException(data['error'] ?? 'Failed: ${response.statusCode}');
-      } on SocketException {
+      } on SocketException catch (e) {
+        print('SocketException on $endpoint (attempt $attempt): $e');
         if (attempt == _maxRetries) {
-          throw ApiException('Cannot connect to server ($_baseUrl).');
+          throw ApiException(
+            'Cannot connect to server. Check URL ($_baseUrl) or server status.',
+          );
         }
-      } on FormatException {
-        throw ApiException('Invalid JSON from server');
       }
-      await Future.delayed(Duration(seconds: attempt * 2));
+      await Future.delayed(
+        Duration(seconds: attempt * 2),
+      ); // Exponential backoff
     }
     throw ApiException('Failed after $_maxRetries attempts.');
   }
@@ -221,24 +209,36 @@ class ApiService {
   ) async {
     for (int attempt = 1; attempt <= _maxRetries; attempt++) {
       try {
+        print('Attempt $attempt: Downloading ${_baseUrl}$endpoint');
         final response = await requestFn().timeout(
           _timeoutDuration,
-          onTimeout: () => throw ApiException('Timeout on $endpoint'),
+          onTimeout: () {
+            print('Timeout on $endpoint (attempt $attempt)');
+            throw ApiException('Timeout on $endpoint');
+          },
         );
+        print('Download response: ${response.statusCode}');
         if (response.statusCode >= 200 && response.statusCode < 300) {
           return response;
         }
         if (response.statusCode == 401) clearToken();
         final data = jsonDecode(response.body);
-        throw ApiException(data['error'] ?? 'Download failed');
-      } on SocketException {
+        throw ApiException(
+          data['error'] ?? 'Download failed: ${response.statusCode}',
+        );
+      } on SocketException catch (e) {
+        print('SocketException on $endpoint (attempt $attempt): $e');
         if (attempt == _maxRetries) {
-          throw ApiException('Download failed ($_baseUrl).');
+          throw ApiException(
+            'Cannot connect to server for download. Check URL ($_baseUrl).',
+          );
         }
       } on FormatException {
-        throw ApiException('Invalid download response format');
+        throw ApiException('Invalid response format from server.');
       }
-      await Future.delayed(Duration(seconds: attempt * 2));
+      await Future.delayed(
+        Duration(seconds: attempt * 2),
+      ); // Exponential backoff
     }
     throw ApiException('Download failed after $_maxRetries attempts.');
   }

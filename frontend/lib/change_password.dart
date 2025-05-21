@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'api_service.dart';
 
-// UI Constants
+// UI Constants from DashboardPage
 const kPrimaryColor = Color(0xFF00BCD4);
 const kBackgroundColor = Color(0xFF121212);
 const kErrorColor = Color(0xFFF44336);
@@ -22,33 +22,15 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
   Future<void> _changePassword() async {
     if (_isSubmitting) return;
-
-    final currentPassword = _currentPasswordController.text.trim();
-    final newPassword = _newPasswordController.text.trim();
-
-    if (currentPassword.isEmpty || newPassword.isEmpty) {
-      setState(() => _message = 'Both fields are required');
-      return;
-    }
-    if (newPassword.length < 8 ||
-        !RegExp(r'^(?=.*[A-Za-z])(?=.*\d)').hasMatch(newPassword)) {
-      setState(
-        () =>
-            _message =
-                'New password must be 8+ characters with letters and numbers',
-      );
-      return;
-    }
-
     setState(() {
       _isSubmitting = true;
-      _message = 'Changing password...';
+      _message = '';
     });
 
     try {
       final result = await ApiService.changePassword(
-        currentPassword: currentPassword,
-        newPassword: newPassword,
+        currentPassword: _currentPasswordController.text,
+        newPassword: _newPasswordController.text,
       );
       setState(() {
         _message = result['message'] ?? 'Password changed successfully';
@@ -56,17 +38,11 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
         _currentPasswordController.clear();
         _newPasswordController.clear();
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_message), backgroundColor: kPrimaryColor),
-      );
     } catch (e) {
       setState(() {
         _message = 'Failed to change password: $e';
         _isSubmitting = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_message), backgroundColor: kErrorColor),
-      );
     }
   }
 
@@ -92,27 +68,57 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
           children: [
             TextField(
               controller: _currentPasswordController,
-              decoration: const InputDecoration(labelText: 'Current Password'),
+              decoration: const InputDecoration(
+                labelText: 'Current Password',
+                labelStyle: TextStyle(color: kTextColor),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: kTextColor),
+                ),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: kPrimaryColor),
+                ),
+              ),
               style: const TextStyle(color: kTextColor),
               obscureText: true,
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _newPasswordController,
-              decoration: const InputDecoration(labelText: 'New Password'),
+              decoration: const InputDecoration(
+                labelText: 'New Password',
+                labelStyle: TextStyle(color: kTextColor),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: kTextColor),
+                ),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: kPrimaryColor),
+                ),
+              ),
               style: const TextStyle(color: kTextColor),
               obscureText: true,
             ),
             const SizedBox(height: 16),
-            if (_message.isNotEmpty)
-              Text(_message, style: const TextStyle(color: kErrorColor)),
+            Text(_message, style: const TextStyle(color: kErrorColor)),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _isSubmitting ? null : _changePassword,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kPrimaryColor,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
               child:
                   _isSubmitting
                       ? const CircularProgressIndicator(color: kTextColor)
-                      : const Text('Change Password'),
+                      : const Text(
+                        'Change Password',
+                        style: TextStyle(color: kTextColor),
+                      ),
             ),
           ],
         ),

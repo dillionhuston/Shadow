@@ -1,4 +1,4 @@
-from .db import db
+from models.db import db
 from datetime import datetime
 
 class File(db.Model):
@@ -6,7 +6,7 @@ class File(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.String, db.ForeignKey('user.id'), nullable=False)
     filename = db.Column(db.String(255), nullable=False)
-    original_filename = db.Column(db.String(255), nullable=True)  
+    original_filename = db.Column(db.String(255), nullable=True)  # Nullable for existing files
     filepath = db.Column(db.String(255), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 

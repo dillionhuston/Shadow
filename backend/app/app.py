@@ -1,19 +1,18 @@
 import os
-import re
-import io
 import base64
-import hashlib
-from datetime import datetime
-from flask import Flask, request, jsonify, send_file
+import re
+from flask import Flask, jsonify, request, send_file
 from flask_sqlalchemy import SQLAlchemy
-from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, create_access_token
-from services.encryption import EncryptionService
+from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
+from flask_cors import CORS
+from werkzeug.utils import secure_filename
+from io import BytesIO
+
+from config import Config
 from models.user import User
 from models.file import File
 from models.db import db
-from config import Config
-from flask_cors import CORS
-import mimetypes
+from services.encryption import EncryptionService
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -22,11 +21,9 @@ db.init_app(app)
 jwt = JWTManager(app)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-encryption_service = EncryptionService()
-
-with app.app_context():
-    db.create_all()
-    os.makedirs(Config.ENCRYPTED_FILE_PATH, exist_ok=True)
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({"status": "healthy"}), 200
 
 @app.route('/signup', methods=['POST'])
 def signup():
@@ -34,74 +31,37 @@ def signup():
     username = payload.get('username')
     email = payload.get('email')
     password = payload.get('password')
-    encryption_key = payload.get('encryption_key')  # Get the encryption key
 
-    if not all([username, email, password, encryption_key]):
-        return jsonify({'error': 'Missing required fields'}), 400
+    if not all([username, email, password]):
+        return jsonify({'error': 'Missing fields'}), 400
 
-    if len(username) < 3:
-        return jsonify({'error': 'Username must be at least 3 characters'}), 400
-
-    if not re.match(r'^[\w.-]+@([\w-]+\.)+[\w-]{2,4}$', email):
-        return jsonify({'error': 'Invalid email format'}), 400
-
-    if len(password) < 8 or not re.match(r'^(?=.*[A-Za-z])(?=.*\d)', password):
-        return jsonify({'error': 'Password must be 8+ characters with letters and numbers'}), 400
-        
-    if len(encryption_key) < 10:
-        return jsonify({'error': 'Encryption key must be at least 10 characters'}), 400
-
-    if User.query.filter_by(username=username).first():
-        return jsonify({'error': 'Username already exists'}), 400
+    if not re.match(r'^(?=.*[A-Za-z])(?=.*\d).{8,}$', password):
+        return jsonify({'error': 'Password must be at least 8 characters with letters and numbers'}), 400
 
     if User.query.filter_by(email=email).first():
-        return jsonify({'error': 'Email already exists'}), 400
+        return jsonify({'error': 'Email already registered'}), 400
 
-    try:
-        # Use the encryption key for encrypting login data
-        encrypted_data = encryption_service.encrypt_login(username, email, password, encryption_key)
-        user = User(
-            username=username,  # Store plaintext username for login
-            email=email,        # Store plaintext email for unique constraint
-            password=User.generate_hash(password),  # Hash the password for authentication
-            encryption_key_hash=User.hash_encryption_key(encryption_key)  # Hash the encryption key
-        )
-        db.session.add(user)
-        db.session.commit()
-        return jsonify({'message': 'User created successfully'}), 201
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'error': f'Signup failed: {str(e)}'}), 500
+    user = User.add_user(username, email, password)
+    db.session.commit()
+    return jsonify({'message': 'Success', 'user_id': str(user.id)}), 201
 
 @app.route('/login', methods=['POST'])
 def login():
     payload = request.get_json() or {}
     username = payload.get('username')
     password = payload.get('password')
-    encryption_key = payload.get('encryption_key')  # Get the encryption key
-
-    if not all([username, password, encryption_key]):
-        return jsonify({'error': 'Missing username, password, or encryption key'}), 400
 
     user = User.query.filter_by(username=username).first()
-    if not user:
-        return jsonify({'error': 'Invalid credentials'}), 401
-        
-    # First verify the password
-    if not User.verify_hash(password, user.password):
-        return jsonify({'error': 'Invalid credentials'}), 401
-        
-    # Then verify the encryption key
-    if not User.verify_encryption_key(encryption_key, user.encryption_key_hash):
-        return jsonify({'error': 'Invalid encryption key'}), 401
-    
-    # If both checks pass, create a token
-    token = create_access_token(identity=str(user.id))
-    return jsonify({
-        'message': 'Success',
-        'token': token,
-        'user_id': str(user.id)
-    }), 200
+    if user and User.verify_hash(password, user.password):
+        token = create_access_token(identity=str(user.id))
+        return jsonify({'message': 'Success', 'token': token, 'user_id': str(user.id)}), 200
+
+    return jsonify({'error': 'Invalid credentials'}), 401
+
+@app.route('/logout', methods=['POST'])
+@jwt_required()
+def logout():
+    return jsonify({'message': 'Success'}), 200
 
 @app.route('/change-password', methods=['POST'])
 @jwt_required()
@@ -110,188 +70,152 @@ def change_password():
     payload = request.get_json() or {}
     current_pw = payload.get('currentPassword')
     new_pw = payload.get('newPassword')
-    encryption_key = payload.get('encryption_key')
 
-    if not all([current_pw, new_pw, encryption_key]):
-        return jsonify({'error': 'Missing current password, new password, or encryption key'}), 400
+    if not all([current_pw, new_pw]):
+        return jsonify({'error': 'Missing current or new password'}), 400
 
     if not re.match(r'^(?=.*[A-Za-z])(?=.*\d).{8,}$', new_pw):
         return jsonify({'error': 'New password must be at least 8 characters with letters and numbers'}), 400
 
     user = User.query.get(user_id)
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-        
-    # Verify both password and encryption key
-    if not User.verify_hash(current_pw, user.password):
+    if not user or not User.verify_hash(current_pw, user.password):
         return jsonify({'error': 'Invalid current password'}), 401
-        
-    if not User.verify_encryption_key(encryption_key, user.encryption_key_hash):
-        return jsonify({'error': 'Invalid encryption key'}), 401
 
-    # If both checks pass, update the password
     user.password = User.generate_hash(new_pw)
     db.session.commit()
     return jsonify({'message': 'Password changed'}), 200
 
-@app.route('/change-encryption-key', methods=['POST'])
-@jwt_required()
-def change_encryption_key():
-    user_id = get_jwt_identity()
-    payload = request.get_json() or {}
-    password = payload.get('password')
-    current_key = payload.get('current_encryption_key')
-    new_key = payload.get('new_encryption_key')
-
-    if not all([password, current_key, new_key]):
-        return jsonify({'error': 'Missing password, current key, or new key'}), 400
-
-    if len(new_key) < 10:
-        return jsonify({'error': 'New encryption key must be at least 10 characters'}), 400
-
-    user = User.query.get(user_id)
-    if not user:
-        return jsonify({'error': 'User not found'}), 404
-        
-    # Verify both password and current encryption key
-    if not User.verify_hash(password, user.password):
-        return jsonify({'error': 'Invalid password'}), 401
-        
-    if not User.verify_encryption_key(current_key, user.encryption_key_hash):
-        return jsonify({'error': 'Invalid current encryption key'}), 401
-
-    # Update the encryption key hash
-    user.encryption_key_hash = User.hash_encryption_key(new_key)
-    db.session.commit()
-    
-    # You would also need to re-encrypt stored files with the new key
-    # This would require fetching all files, decrypting with old key, and re-encrypting with new key
-    # This is not implemented here for brevity
-    
-    return jsonify({'message': 'Encryption key updated'}), 200
-
-@app.route('/logout', methods=['POST'])
-@jwt_required()
-def logout():
-    return jsonify({'message': 'Logged out successfully'}), 200
-
 @app.route('/dashboard', methods=['GET'])
 @jwt_required()
 def dashboard():
-    user_id = get_jwt_identity()
-    files = File.query.filter_by(user_id=user_id).all()
-    files_data = [
-        {
-            'id': f.id,
-            'filename': f.filename,
-            'created_at': f.created_at.isoformat()
-        } for f in files
-    ]
-    return jsonify({'files': files_data}), 200
-
-@app.route('/files', methods=['GET'])
-@jwt_required()
-def get_files():
-    user_id = get_jwt_identity()
-    files = File.query.filter_by(user_id=user_id).all()
-    files_data = [
-        {
-            'id': f.id,
-            'filename': f.filename,
-            'created_at': f.created_at.isoformat()
-        } for f in files
-    ]
-    return jsonify({'files': files_data}), 200
+    try:
+        user_id = get_jwt_identity()
+        files = File.query.filter_by(user_id=user_id).all()
+        return jsonify({
+            'files': [{
+                'id': f.id,
+                'filename': f.original_filename or f.filename,
+                'created_at': f.created_at.isoformat()
+            } for f in files]
+        }), 200
+    except Exception as e:
+        print(f"[dashboard] Error: {e}")
+        return jsonify({'error': 'Failed to fetch files'}), 500
 
 @app.route('/upload', methods=['POST'])
 @jwt_required()
 def upload_file():
     user_id = get_jwt_identity()
-    if 'file' not in request.files or 'data' not in request.form or 'encryption_key' not in request.form:
-        return jsonify({'error': 'Missing file, data, or encryption key'}), 400
+    file = request.files.get('file')
 
-    file = request.files['file']
-    data = request.form['data']
-    encryption_key = request.form['encryption_key']
+    if not file or file.filename == '':
+        return jsonify({'error': 'No file provided'}), 400
 
-    if not file.filename:
-        return jsonify({'error': 'No file selected'}), 400
+    file.seek(0, os.SEEK_END)
+    if file.tell() > 10 * 1024 * 1024:
+        return jsonify({'error': 'File too large'}), 400
+    file.seek(0)
 
-    if not data:
-        return jsonify({'error': 'No data provided'}), 400
-        
-    if not encryption_key:
-        return jsonify({'error': 'No encryption key provided'}), 400
+    filename = secure_filename(file.filename)
+    file_data = file.read()
+    encoded_data = base64.b64encode(file_data).decode('utf-8')
 
-    allowed_extensions = {'txt', 'pdf', 'doc', 'docx'}
-    file_ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
-    if file_ext not in allowed_extensions:
-        return jsonify({'error': 'Invalid file extension'}), 400
-        
-    # Verify the encryption key
     user = User.query.get(user_id)
-    if not user or not User.verify_encryption_key(encryption_key, user.encryption_key_hash):
-        return jsonify({'error': 'Invalid encryption key'}), 401
-
     try:
-        # Now use the encryption key with user_id for file encryption
-        encrypted_filename = encryption_service.encrypt(data, file.filename, user_id, encryption_key)
-        
+        print(f"[upload] User: {user_id}, File: {filename}")
+        encrypted_filename = EncryptionService.encrypt(encoded_data, filename, user_id, user.get_key())
+        encrypted_path = os.path.join(Config.ENCRYPTED_FILE_PATH, encrypted_filename)
+
         new_file = File(
             user_id=user_id,
-            filename=file.filename,
-            filepath=os.path.join(Config.ENCRYPTED_FILE_PATH, encrypted_filename)
+            filename=encrypted_filename,
+            filepath=encrypted_path,
+            original_filename=filename
         )
+
         db.session.add(new_file)
         db.session.commit()
 
-        return jsonify({
-            'message': 'File uploaded successfully',
-            'file_id': new_file.id,
-            'filename': file.filename
-        }), 201
+        print(f"[upload] Saved: {new_file.id} as {encrypted_filename}")
+        return jsonify({'message': f'{filename} uploaded'}), 201
+
+    except EncryptionService.EncryptionError as e:
+        print(f"[upload] Encryption error: {e}")
+        return jsonify({'error': str(e)}), 500
+
     except Exception as e:
+        print(f"[upload] General error: {e}")
         db.session.rollback()
-        return jsonify({'error': f'Upload failed: {str(e)}'}), 500
+        return jsonify({'error': 'Upload failed'}), 500
+
+@app.route('/files', methods=['GET'])
+@jwt_required()
+def list_files():
+    try:
+        user_id = get_jwt_identity()
+        files_info = []
+
+        for name in os.listdir(Config.ENCRYPTED_FILE_PATH):
+            path = os.path.join(Config.ENCRYPTED_FILE_PATH, name)
+            if os.path.isfile(path):
+                entry = File.query.filter_by(user_id=user_id, filename=name).first()
+                if entry:
+                    files_info.append({
+                        'filename': entry.original_filename or entry.filename,
+                        'size': os.path.getsize(path),
+                        'created_at': entry.created_at.isoformat() if entry.created_at else None
+                    })
+
+        return jsonify({'files': files_info}), 200
+
+    except Exception as e:
+        print(f"[files] Error: {e}")
+        return jsonify({'error': 'Failed to list files'}), 500
 
 @app.route('/download/<file_id>', methods=['GET'])
 @jwt_required()
 def download_file(file_id):
-    user_id = get_jwt_identity()
-    encryption_key = request.headers.get('Encryption-Key')
-    
-    if not encryption_key:
-        return jsonify({'error': 'No encryption key provided'}), 400
-        
-    file_record = File.query.filter_by(id=file_id, user_id=user_id).first()
-    if not file_record:
-        return jsonify({'error': 'File not found or unauthorized'}), 404
-        
-    # Verify the encryption key
-    user = User.query.get(user_id)
-    if not user or not User.verify_encryption_key(encryption_key, user.encryption_key_hash):
-        return jsonify({'error': 'Invalid encryption key'}), 401
-
     try:
-        # Extract filename from filepath
-        encrypted_filename = os.path.basename(file_record.filepath)
-        
-        # Decrypt the file using user's encryption key
-        decrypted_data = encryption_service.decrypt(encrypted_filename, user_id, encryption_key)
-        file_data = base64.b64decode(decrypted_data)
+        user_id = get_jwt_identity()
+        file_entry = File.query.filter_by(id=file_id, user_id=user_id).first()
 
-        mime_type, _ = mimetypes.guess_type(file_record.filename)
-        if not mime_type:
-            mime_type = 'application/octet-stream'
+        if not file_entry:
+            return jsonify({'error': 'File not found or unauthorized'}), 404
+
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        path = file_entry.filepath.replace('/', os.sep)
+        if not os.path.exists(path):
+            return jsonify({'error': 'File not found on server'}), 404
+
+        print(f"[download] Decrypting {file_entry.filename} for user {user_id}")
+        decrypted_b64 = EncryptionService.decrypt(file_entry.filename, user_id, user.get_key())
+        decrypted_data = base64.b64decode(decrypted_b64)
+
+        filename = file_entry.original_filename or file_entry.filename
+        ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else 'txt'
+        mimetypes = {
+            'txt': 'text/plain',
+            'pdf': 'application/pdf',
+            'doc': 'application/msword',
+            'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        }
 
         return send_file(
-            io.BytesIO(file_data),
-            mimetype=mime_type,
-            as_attachment=True,
-            download_name=file_record.filename
+            BytesIO(decrypted_data),
+            download_name=filename,
+            mimetype=mimetypes.get(ext, 'application/octet-stream'),
+            as_attachment=True
         )
+
     except Exception as e:
-        return jsonify({'error': f'Download failed: {str(e)}'}), 500
+        print(f"[download] Error: {e}")
+        return jsonify({'error': 'Download failed'}), 500
+
+with app.app_context():
+    db.create_all()
 
 if __name__ == '__main__':
     app.run(debug=True, host='127.0.0.1', port=5000)

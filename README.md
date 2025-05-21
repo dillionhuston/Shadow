@@ -1,96 +1,73 @@
 # ShadowBox
 
-![ShadowBox Demo](demo.gif)
-![Everything Encrypted](ss.png)
+**Private Cloud Storage You Can Trust**
 
-**Local Encrypted File Storage You Control**
+> **Note**: ShadowBox is a prototype. Don’t store sensitive files yet. See the `prototype` branch for the early version.
 
-ShadowBox is a simple, self-hosted encrypted file storage system. You can run it locally on your PC, a Raspberry Pi, or a server on your network. Once it's running, you can access it from any device on your LAN — or forward a port to access it remotely or connect it to a domain.
+ShadowBox is a secure, privacy-focused cloud storage app built with **Dart** for the front-end and **Python** for the back-end. With AES-256 encryption, your files stay safe and private. We’re working toward a decentralized, user-controlled platform for file storage and sharing.
 
-The frontend is a basic example hosted on GitHub. The backend is built with Python using Flask. Files are encrypted before being stored and only decrypted when downloaded. No original data is saved.
+## What It Does
 
-This is an early version, but it works. You can use it as-is, improve it, or take the core idea and build your own version.
+- **Encrypted Uploads**: Files are secured with AES-256 before upload.
+- **Secure Sharing**: Share files via encrypted links you control.
+- **User Accounts**: Private storage spaces with role-based access.
+- **Web Interface**: Simple, Dart-based UI for file management.
+- **Python Backend**: Runs on Flask and SQLAlchemy for reliable file and user handling.
 
----
+## What’s Next
 
-## Features
-- Files synchronous on all devices with same account
-- AES-256 encrypted uploads — files are stored encrypted, not raw
-- Decryption only happens when a file is downloaded
-- Simple Flask-based backend you can run anywhere
-- Web interface included (basic Dart frontend as a starting point)
-- You control the key — planning to support local key storage soon
+- **Group Sharing**: Share files with teams and set permissions.
+- **Decentralized Storage**: Use IPFS or similar for distributed storage.
+- **Mobile Apps**: Build iOS/Android apps with Flutter.
+- **File Versioning**: Track and revert file changes.
 
----
-
-## Roadmap
-
-- Let users manage their encryption keys locally
-- User accounts and file-level permissions
-- File versioning
-- Shared folders
-- Optional support for decentralized storage (e.g. IPFS)
-
----
-
-## Tech Stack
-
-- Backend: Python, Flask, SQLAlchemy
-- Frontend: Dart (just an example, you can replace it)
-- Encryption: AES-256
-- Database: SQLite (easy to swap out)
-
----
-
-## Getting Started
+## Setup
 
 ### Requirements
 
-- Python 3.8 or higher
-- Dart (if modifying or running the frontend)
+- **Dart**: For the front-end.
+- **Python 3.8+**: For the back-end.
+- **Flask & SQLAlchemy**: Backend libraries.
+- **SQLite**: For testing.
 
----
+### Steps
 
-### Download & Run
+1. Clone the repo:
+   ```bash
+   git clone https://github.com/dillionhuston/Shadow.git
+   cd ShadowBox
+   ```
 
-#### Step 1: Clone the repo
+2. Front-end:
+   ```bash
+   cd frontend
+   dart pub get
+   dart run
+   ```
 
-```bash
-git clone https://github.com/dillionhuston/Shadow.git
-cd Shadow
-```
+3. Back-end:
+   ```bash
+   cd backend
+   pip install -r requirements.txt
+   flask run
+   ```
 
-### Step 2: Run the backend
-```bash 
-cd backend
-pip install -r requirements.txt
-flask run
-```
+## Join the Project
 
-### Step 3: Run the frontend
-```bash
-cd ../frontend
-dart pub get
-dart run
+Want to help build ShadowBox? We need coders, designers, and testers to make this a reality. If you know Dart, Python, or UI design, jump in! You could:
 
-```
+- **Front-End**: Improve the Dart UI or start Flutter apps.
+- **Back-End**: Optimize Python code or add decentralized storage.
+- **Security**: Test encryption or fix bugs.
+- **Features**: Build group sharing or versioning.
 
-### Contributing 
+**How to Contribute**:
+1. Fork the repo: https://github.com/dillionhuston/Shadow.git
+2. Check issues and send pull requests to the `dev` branch.
+3. Connect with us on [Discord/Community] (link coming soon).
 
--  Improve frontend 
--  Clean up backend
--  Custom features
--  Test encryption
+## Why Get Involved?
 
-### Why Shadowbox?
-
-- You keep Control - your files, your server, your rules
-- NO third-party storage or tracking 
-- Lightweight, easy to run on low-power devices(Rasberry PI)
-- Good base for more advanced projects
-
-### License 
-
-- MIT - free to use
-
-
+- Help create a privacy-first cloud storage solution.
+- Sharpen your Dart, Python, or decentralized tech skills.
+- Add a solid project to your portfolio.
