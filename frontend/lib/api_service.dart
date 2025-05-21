@@ -14,7 +14,7 @@ class ApiService {
   static const Duration _timeoutDuration = Duration(seconds: 45);
   static const int _maxRetries = 3;
   static final _encryptionKey = encrypt.Key.fromUtf8(
-    '9/vWAmbsSYkYVd+gFsGGOTWfqGUhL+TTtEO0uQEYGjX6ox5/55z7C1zO6R3RTftMGoIg1Sxk+i7Tu3vZUkTE7UwDWiH1aqhYjq8QT3UdKJGbfqx1g5JazvwOnSv22/HBDv0eWWnoh6Y8T9rE+RJGej+NNjBn6qyzwhJhoDe2BCt7K2w6xdJku/V+Pztbe9+W',
+    '12345678901234567890123456789012', // 32 chars
   );
 
   static final _iv = encrypt.IV.fromLength(128); // 16 bytes for AES
