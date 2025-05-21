@@ -1,0 +1,6 @@
+Flask==2.3.2
+Flask-JWT-Extended==4.4.4
+SQLAlchemy==2.0.19
+cryptography==41.0.3
+pytest==7.4.0
+python-dotenv==1.0.0
