@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 import 'api_service.dart';
 
+// UI Constants
+const kPrimaryColor = Color(0xFF00BCD4);
+const kBackgroundColor = Color(0xFF121212);
+const kSidebarColor = Color(0xFF1E1E1E);
+const kHeaderColor = Color(0xFF1F1F1F);
+const kErrorColor = Color(0xFFF44336);
+
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
 
@@ -10,6 +17,7 @@ class Homepage extends StatefulWidget {
 
 class _HomepageState extends State<Homepage> {
   int fileCount = 0;
+  String _message = '';
 
   @override
   void initState() {
@@ -18,49 +26,64 @@ class _HomepageState extends State<Homepage> {
   }
 
   Future<void> _loadFiles() async {
+    setState(() => _message = 'Loading files...');
     try {
       final files = await ApiService.getDashboardFiles();
       setState(() {
         fileCount = files.length;
+        _message = '';
       });
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.toString())));
+      setState(() => _message = 'Failed to load files: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_message), backgroundColor: kErrorColor),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: kBackgroundColor,
       body: Row(
         children: [
-          SizedBox(
+          Container(
             width: 240,
-            child: Container(
-              color: const Color(0xFF1E1E1E),
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'ShadowBox',
-                    style: TextStyle(fontSize: 26, color: Color(0xFF00BCD4)),
-                  ),
-                  const SizedBox(height: 30),
-                  TextButton(
-                    onPressed: () => Navigator.pushNamed(context, '/dashboard'),
-                    child: const Text('Dashboard'),
-                  ),
-                  TextButton(onPressed: () {}, child: const Text('My Files')),
-                  TextButton(
-                    onPressed:
-                        () => Navigator.pushNamed(context, '/change_password'),
-                    child: const Text('Settings'),
-                  ),
-                  TextButton(onPressed: () {}, child: const Text('Logout')),
-                ],
-              ),
+            color: kSidebarColor,
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'ShadowBox',
+                  style: TextStyle(fontSize: 26, color: kPrimaryColor),
+                ),
+                const SizedBox(height: 30),
+                TextButton(
+                  onPressed: () => Navigator.pushNamed(context, '/dashboard'),
+                  child: const Text('Dashboard'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pushNamed(context, '/files'),
+                  child: const Text('My Files'),
+                ),
+                TextButton(
+                  onPressed:
+                      () => Navigator.pushNamed(context, '/change_password'),
+                  child: const Text('Settings'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    await ApiService.logout();
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      '/login',
+                      (route) => false,
+                    );
+                  },
+                  child: const Text('Logout'),
+                ),
+              ],
             ),
           ),
           Expanded(
@@ -72,40 +95,13 @@ class _HomepageState extends State<Homepage> {
                     horizontal: 33,
                     vertical: 17,
                   ),
-                  color: const Color(0xFF1F1F1F),
+                  color: kHeaderColor,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      const Text('Hello, User'),
-                      const SizedBox(width: 14),
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border(
-                            top: BorderSide(color: Color(0xFF03A9F4), width: 2),
-                            left: BorderSide(
-                              color: Color(0xFF03A9F4),
-                              width: 2,
-                            ),
-                            right: BorderSide(
-                              color: Color(0xFF03A9F4),
-                              width: 2,
-                            ),
-                            bottom: BorderSide(
-                              color: Color(0xFF03A9F4),
-                              width: 2,
-                            ),
-                          ),
-                        ),
-                        child: ClipOval(
-                          child: Image.network(
-                            'https://via.placeholder.com/40',
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
+                    children: const [
+                      Text('Hello, User'),
+                      SizedBox(width: 14),
+                      CircleAvatar(radius: 20, child: Icon(Icons.person)),
                     ],
                   ),
                 ),
@@ -118,17 +114,19 @@ class _HomepageState extends State<Homepage> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const Text(
-                              'Welcome to Shadowbox',
+                              'Welcome to ShadowBox',
                               style: TextStyle(
                                 fontSize: 26,
-                                color: Color(0xFF00BCD4),
+                                color: kPrimaryColor,
                               ),
                             ),
                             const SizedBox(height: 25),
-                            Text(
-                              'You have $fileCount files.',
-                              style: const TextStyle(color: Color(0xFF777777)),
-                            ),
+                            Text('You have $fileCount files.'),
+                            if (_message.isNotEmpty)
+                              Text(
+                                _message,
+                                style: const TextStyle(color: kErrorColor),
+                              ),
                             const SizedBox(height: 20),
                             ElevatedButton(
                               onPressed:
@@ -146,7 +144,7 @@ class _HomepageState extends State<Homepage> {
                 ),
                 Container(
                   padding: const EdgeInsets.all(10),
-                  color: const Color(0xFF121212),
+                  color: kBackgroundColor,
                   child: const Text(
                     '© 2025 ShadowBox | Privacy Policy',
                     style: TextStyle(color: Color(0xFF777777)),
