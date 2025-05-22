@@ -17,9 +17,11 @@ from services.encryption import EncryptionService
 app = Flask(__name__)
 app.config.from_object(Config)
 
+
 db.init_app(app)
 jwt = JWTManager(app)
 CORS(app, resources={r"/*": {"origins": "*"}})
+
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -30,7 +32,7 @@ def signup():
     payload = request.get_json() or {}
     username = payload.get('username')
     email = payload.get('email')
-    password = payload.get('password')
+    password = payload.get('password')    
 
     if not all([username, email, password]):
         return jsonify({'error': 'Missing fields'}), 400
@@ -45,17 +47,18 @@ def signup():
     db.session.commit()
     return jsonify({'message': 'Success', 'user_id': str(user.id)}), 201
 
+
+# move logic to another file keep modular 
 @app.route('/login', methods=['POST'])
 def login():
     payload = request.get_json() or {}
     username = payload.get('username')
     password = payload.get('password')
-
     user = User.query.filter_by(username=username).first()
+    
     if user and User.verify_hash(password, user.password):
         token = create_access_token(identity=str(user.id))
         return jsonify({'message': 'Success', 'token': token, 'user_id': str(user.id)}), 200
-
     return jsonify({'error': 'Invalid credentials'}), 401
 
 @app.route('/logout', methods=['POST'])
@@ -196,7 +199,7 @@ def download_file(file_id):
 
         filename = file_entry.original_filename or file_entry.filename
         ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else 'txt'
-        mimetypes = {
+        mimetypes = { # change these
             'txt': 'text/plain',
             'pdf': 'application/pdf',
             'doc': 'application/msword',
