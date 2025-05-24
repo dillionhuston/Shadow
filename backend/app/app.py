@@ -23,9 +23,7 @@ jwt = JWTManager(app)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 
-@app.route('/health', methods=['GET'])
-def health_check():
-    return jsonify({"status": "healthy"}), 200
+
 
 @app.route('/signup', methods=['POST'])
 def signup():
