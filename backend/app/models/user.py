@@ -24,6 +24,9 @@ class User(db.Model):
         )
         db.session.add(user)
         return user
+    
+
+    
 
     @staticmethod
     def generate_hash(password):

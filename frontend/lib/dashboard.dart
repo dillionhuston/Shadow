@@ -4,7 +4,7 @@ import 'package:universal_html/html.dart' as html;
 
 import 'api_service.dart';
 
-// Constants for UI
+// Constants for UI (unchanged)
 const kPrimaryColor = Color(0xFF00BCD4);
 const kBackgroundColor = Color(0xFF121212);
 const kSidebarColor = Color(0xFF1E1E1E);
@@ -33,18 +33,15 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    // Set the token in ApiService
     print('Setting token in DashboardPage: ${widget.token}');
     ApiService.setToken(widget.token);
     _initialize();
   }
 
-  /// Initialize dashboard by fetching files.
   Future<void> _initialize() async {
     await _fetchFiles();
   }
 
-  /// Upload a file to the server.
   Future<void> _uploadFile() async {
     if (_isUploading) return;
     setState(() {
@@ -100,7 +97,6 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  /// Fetch user's files from the server.
   Future<void> _fetchFiles() async {
     setState(() {
       _isFetching = true;
@@ -126,7 +122,6 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  /// Download a file from the server.
   Future<void> _downloadFile(int fileId, String filename) async {
     setState(() => _message = 'Downloading $filename...');
     try {
@@ -135,7 +130,6 @@ class _DashboardPageState extends State<DashboardPage> {
         'Download response status: ${response.statusCode}, body length: ${response.bodyBytes.length}',
       );
       if (response.statusCode == 200) {
-        // Determine MIME type based on file extension
         final extension = filename.split('.').last.toLowerCase();
         final mimeTypes = {
           'txt': 'text/plain',
@@ -145,8 +139,6 @@ class _DashboardPageState extends State<DashboardPage> {
               'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         };
         final mimeType = mimeTypes[extension] ?? 'application/octet-stream';
-
-        // Create Blob with MIME type
         final blob = html.Blob([response.bodyBytes], mimeType);
         final url = html.Url.createObjectUrlFromBlob(blob);
         final anchor =
@@ -169,7 +161,57 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  /// Handle user logout.
+  // New method: Delete a file
+  Future<void> _deleteFile(int fileId, String filename) async {
+    try {
+      // Show confirmation dialog
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder:
+            (context) => AlertDialog(
+              backgroundColor: kCardColor,
+              title: const Text(
+                'Delete File',
+                style: TextStyle(color: kTextColor),
+              ),
+              content: Text(
+                'Are you sure you want to delete $filename?',
+                style: const TextStyle(color: kSecondaryTextColor),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(color: kTextColor),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text(
+                    'Delete',
+                    style: TextStyle(color: kErrorColor),
+                  ),
+                ),
+              ],
+            ),
+      );
+
+      if (confirm != true) return;
+
+      setState(() => _message = 'Deleting $filename...');
+      final response = await ApiService.deleteFile(fileId);
+      setState(() {
+        _message = response['message'] ?? 'File deleted successfully';
+      });
+      await _fetchFiles(); // Refresh the file list
+    } catch (e) {
+      setState(() {
+        _message = 'Failed to delete $filename: $e';
+      });
+    }
+  }
+
   Future<void> _logout() async {
     try {
       await ApiService.logout(token: widget.token);
@@ -187,7 +229,7 @@ class _DashboardPageState extends State<DashboardPage> {
       backgroundColor: kBackgroundColor,
       body: Row(
         children: [
-          // Sidebar
+          // Sidebar (unchanged)
           Container(
             width: 240,
             color: kSidebarColor,
@@ -233,7 +275,7 @@ class _DashboardPageState extends State<DashboardPage> {
           Expanded(
             child: Column(
               children: [
-                // Header
+                // Header (unchanged)
                 Container(
                   height: 70,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -373,16 +415,34 @@ class _DashboardPageState extends State<DashboardPage> {
                                               color: kSecondaryTextColor,
                                             ),
                                           ),
-                                          trailing: IconButton(
-                                            icon: const Icon(
-                                              Icons.download,
-                                              color: kSecondaryTextColor,
-                                            ),
-                                            onPressed:
-                                                () => _downloadFile(
-                                                  file['id'] ?? 0,
-                                                  file['filename'] ?? 'unknown',
+                                          trailing: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              IconButton(
+                                                icon: const Icon(
+                                                  Icons.download,
+                                                  color: kSecondaryTextColor,
                                                 ),
+                                                onPressed:
+                                                    () => _downloadFile(
+                                                      file['id'] ?? 0,
+                                                      file['filename'] ??
+                                                          'unknown',
+                                                    ),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(
+                                                  Icons.delete,
+                                                  color: kErrorColor,
+                                                ),
+                                                onPressed:
+                                                    () => _deleteFile(
+                                                      file['id'] ?? 0,
+                                                      file['filename'] ??
+                                                          'unknown',
+                                                    ),
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       );
@@ -401,7 +461,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                   ),
                 ),
-                // Footer
+                // Footer (unchanged)
                 Container(
                   padding: const EdgeInsets.all(12),
                   color: kHeaderColor,
@@ -419,7 +479,6 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
-  /// Build a sidebar navigation button.
   Widget _buildSidebarButton({
     required String label,
     String? route,

@@ -158,6 +158,18 @@ class ApiService {
     );
   }
 
+  static Future<Map<String, dynamic>> deleteFile(int fileId) async {
+    _validateToken();
+    final data = await _makeRequest(
+      () => http.delete(
+        Uri.parse('${_baseUrl}delete/$fileId'),
+        headers: {'Authorization': 'Bearer $_token'},
+      ),
+      'delete/$fileId',
+    );
+    return data;
+  }
+
   static void _validateToken([String? token]) {
     final authToken = token ?? _token;
     if (authToken == null || authToken.isEmpty)

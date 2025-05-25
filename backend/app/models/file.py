@@ -20,3 +20,8 @@ class File(db.Model):
         db.session.commit()
         return 
     
+    def deletefile(file):
+        db.session.delete(file)
+        db.session.commit()
+        db.session.close()
+        return

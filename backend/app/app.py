@@ -48,6 +48,7 @@ def signup():
     return jsonify({'message': 'Success', 'user_id': str(user.id)}), 201
 
 
+
 # move logic to another file keep modular 
 @app.route('/login', methods=['POST'])
 def login():
@@ -61,10 +62,14 @@ def login():
         return jsonify({'message': 'Success', 'token': token, 'user_id': str(user.id)}), 200
     return jsonify({'error': 'Invalid credentials'}), 401
 
+
+
 @app.route('/logout', methods=['POST'])
 @jwt_required()
 def logout():
     return jsonify({'message': 'Success'}), 200
+
+
 
 @app.route('/change-password', methods=['POST'])
 @jwt_required()
@@ -86,7 +91,9 @@ def change_password():
 
     user.password = User.generate_hash(new_pw)
     db.session.commit()
-    return jsonify({'message': 'Password changed'}), 200
+    return jsonify({'message': 'Password changed'}), 
+
+
 
 @app.route('/dashboard', methods=['GET'])
 @jwt_required()
@@ -104,6 +111,7 @@ def dashboard():
     except Exception as e:
         print(f"[dashboard] Error: {e}")
         return jsonify({'error': 'Failed to fetch files'}), 500
+    
 
 @app.route('/upload', methods=['POST'])
 @jwt_required()
@@ -150,6 +158,7 @@ def upload_file():
         print(f"[upload] General error: {e}")
         db.session.rollback()
         return jsonify({'error': 'Upload failed'}), 500
+    
 
 @app.route('/files', methods=['GET'])
 @jwt_required()
@@ -174,6 +183,8 @@ def list_files():
     except Exception as e:
         print(f"[files] Error: {e}")
         return jsonify({'error': 'Failed to list files'}), 500
+    
+
 
 @app.route('/download/<file_id>', methods=['GET'])
 @jwt_required()
@@ -212,13 +223,33 @@ def download_file(file_id):
             mimetype=mimetypes.get(ext, 'application/octet-stream'),
             as_attachment=True
         )
-
+    
     except Exception as e:
         print(f"[download] Error: {e}")
         return jsonify({'error': 'Download failed'}), 500
+
+    
+@app.route('/delete/<file_id>', methods=['DELETE'])
+@jwt_required()
+def delete_file(file_id):
+    try:
+        user_id = get_jwt_identity()
+        file = File.query.filter_by(id=file_id, user_id=user_id).first()
+        if not file:
+            return jsonify({'error': 'File not found or unauthorized'}), 404
+
+        File.deletefile(file)
+        print(f"[delete] File {file_id} deleted for user {user_id}")
+        return jsonify({'message': 'File deleted successfully'}), 200
+
+    except Exception as e:
+        print(f"[delete] Error: {e}")
+        db.session.rollback()
+        return jsonify({'error': 'Failed to delete file'}), 500
+    
 
 with app.app_context():
     db.create_all()
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=10000 )
+    app.run(debug=True, host='127.0.0.1', port=5000 )
