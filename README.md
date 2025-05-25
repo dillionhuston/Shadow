@@ -17,6 +17,7 @@ This is an early version, but it works. You can use it as-is, improve it, or tak
 - Files synchronous on all devices with same account
 - AES-256 encrypted uploads — files are stored encrypted, not raw
 - Decryption only happens when a file is downloaded
+- File deletion completley removes file from db and device
 - Simple Flask-based backend you can run anywhere
 - Web interface included (basic Dart frontend as a starting point)
 - You control the key — planning to support local key storage soon
