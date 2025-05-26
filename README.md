@@ -1,7 +1,7 @@
 # ShadowBox
 
 ![ShadowBox Demo](demo.gif)
-![Everything Encrypted](ss.png)
+
 
 **Local Encrypted File Storage You Control**
 
