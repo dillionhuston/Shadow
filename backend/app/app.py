@@ -5,6 +5,7 @@ from flask import Flask, jsonify, request, send_file
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 from flask_cors import CORS
+from flask_babel import Babel
 from werkzeug.utils import secure_filename
 from io import BytesIO
 
@@ -16,6 +17,7 @@ from services.encryption import EncryptionService
 
 app = Flask(__name__)
 app.config.from_object(Config)
+babel = Babel(app)
 
 
 db.init_app(app)
@@ -250,4 +252,4 @@ with app.app_context():
     db.create_all()
 
 if __name__ == '__main__':
-    app.run(debug=True, host='127.0.0.1', port=5000 )
+    app.run(debug=True, host='0.0.0.0', port=5000 )

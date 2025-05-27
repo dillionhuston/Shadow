@@ -23,3 +23,5 @@ class Config:
 
             logger.error(f"Failed to create encrypted files directory: {str(e)}")
             raise
+
+config = Config()

@@ -76,6 +76,28 @@ dart run
 
 ```
 
+## Option 2: Run Backend with Docker
+
+If you don't want to mess with setting up Python manually, you can just use Docker.
+
+### Prerequisite
+- [Docker installed](https://www.docker.com/get-started)
+
+### Step 1: Clone the repo
+
+```bash
+git clone https://github.com/dillionhuston/Shadow.git
+cd Shadow
+```
+
+### Step 2 
+```bash 
+cd backend
+docker build -t shadowbox .
+docker run -p 5000:5000 shadowbox
+``` 
+
+
 ### Contributing 
 
 -  Improve frontend 
