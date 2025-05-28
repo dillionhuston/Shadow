@@ -19,13 +19,14 @@ app = Flask(__name__)
 app.config.from_object(Config)
 babel = Babel(app)
 
-
 db.init_app(app)
 jwt = JWTManager(app)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
-
-
+# Use this to keep backend up
+@app.route('/health')
+def health():
+    return 'ok', 200
 
 @app.route('/signup', methods=['POST'])
 def signup():
@@ -47,9 +48,6 @@ def signup():
     db.session.commit()
     return jsonify({'message': 'Success', 'user_id': str(user.id)}), 201
 
-
-
-# move logic to another file keep modular 
 @app.route('/login', methods=['POST'])
 def login():
     payload = request.get_json() or {}
@@ -62,14 +60,10 @@ def login():
         return jsonify({'message': 'Success', 'token': token, 'user_id': str(user.id)}), 200
     return jsonify({'error': 'Invalid credentials'}), 401
 
-
-
 @app.route('/logout', methods=['POST'])
 @jwt_required()
 def logout():
     return jsonify({'message': 'Success'}), 200
-
-
 
 @app.route('/change-password', methods=['POST'])
 @jwt_required()
@@ -91,9 +85,7 @@ def change_password():
 
     user.password = User.generate_hash(new_pw)
     db.session.commit()
-    return jsonify({'message': 'Password changed'}), 
-
-
+    return jsonify({'message': 'Password changed'}), 200
 
 @app.route('/dashboard', methods=['GET'])
 @jwt_required()
@@ -111,7 +103,6 @@ def dashboard():
     except Exception as e:
         print(f"[dashboard] Error: {e}")
         return jsonify({'error': 'Failed to fetch files'}), 500
-    
 
 @app.route('/upload', methods=['POST'])
 @jwt_required()
@@ -158,7 +149,6 @@ def upload_file():
         print(f"[upload] General error: {e}")
         db.session.rollback()
         return jsonify({'error': 'Upload failed'}), 500
-    
 
 @app.route('/files', methods=['GET'])
 @jwt_required()
@@ -183,8 +173,6 @@ def list_files():
     except Exception as e:
         print(f"[files] Error: {e}")
         return jsonify({'error': 'Failed to list files'}), 500
-    
-
 
 @app.route('/download/<file_id>', methods=['GET'])
 @jwt_required()
@@ -210,7 +198,7 @@ def download_file(file_id):
 
         filename = file_entry.original_filename or file_entry.filename
         ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else 'txt'
-        mimetypes = { # change these
+        mimetypes = {
             'txt': 'text/plain',
             'pdf': 'application/pdf',
             'doc': 'application/msword',
@@ -228,7 +216,6 @@ def download_file(file_id):
         print(f"[download] Error: {e}")
         return jsonify({'error': 'Download failed'}), 500
 
-    
 @app.route('/delete/<file_id>', methods=['DELETE'])
 @jwt_required()
 def delete_file(file_id):
@@ -246,10 +233,29 @@ def delete_file(file_id):
         print(f"[delete] Error: {e}")
         db.session.rollback()
         return jsonify({'error': 'Failed to delete file'}), 500
-    
 
 with app.app_context():
     db.create_all()
 
+
+# Keep-alive mechanism to prevent backend from going down
+import requests
+import time
+import threading
+
+def keep_alive():
+    base_url = os.getenv('RENDER_EXTERNAL_URL', 'http://localhost:5000') # add fallback url 
+    health_url = f"{base_url}/health"
+    while True:
+        try:
+         response = requests.get(health_url)
+         print(f"[keep-alive] pinged {health_url}: {response.status_code}")
+        except Exception as e:
+         print(f"[keep-alive] ping failed: {e}")
+         time.sleep(300)  # ping every 5 minutes
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000 )
+    # start keep-alive thread
+    threading.Thread(target=keep_alive, daemon=True).start()
+    # start Flask app
+    app.run(debug=True, host='0.0.0.0', port=int(os.getenv('PORT', 5000)))
