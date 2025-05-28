@@ -6,4 +6,5 @@ pytest==7.4.0
 python-dotenv==1.0.0
 flask-cors>=6.0.0
 pycryptodome==3.19.1
+requests
 flask-babel
