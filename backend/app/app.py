@@ -255,7 +255,4 @@ def keep_alive():
          time.sleep(300)  # ping every 5 minutes
 
 if __name__ == '__main__':
-    # start keep-alive thread
-    threading.Thread(target=keep_alive, daemon=True).start()
-    # start Flask app
-    app.run(debug=True, host='0.0.0.0', port=int(os.getenv('PORT', 5000)))
+    app.run(debug=True, host='0.0.0.0', port=5000 )
