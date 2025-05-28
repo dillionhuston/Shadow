@@ -2,6 +2,7 @@
 
 ![ShadowBox Demo](demo.gif)
 
+** website is a demo do not use real credentials **
 
 **Secure, Self-Hosted File Storage**
 
