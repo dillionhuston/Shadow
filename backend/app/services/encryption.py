@@ -10,7 +10,7 @@ class EncryptionService:
     class EncryptionError(Exception):
         pass
 
-    @staticmethod
+    
     def encrypt(data, filename, user_id, key):
         try:
             if isinstance(data, str):
@@ -50,7 +50,7 @@ class EncryptionService:
         except (base64.binascii.Error, ValueError, OSError) as e:
             raise EncryptionService.EncryptionError(f"Encryption failed: {str(e)}")
 
-    @staticmethod
+    
     def decrypt(encrypted_filename, user_id, key):
         try:
             file_path = os.path.join(Config.ENCRYPTED_FILE_PATH, encrypted_filename)
