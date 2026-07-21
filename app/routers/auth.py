@@ -1,15 +1,19 @@
 from app.dependencies import get_user_service, get_jwt_handler
-from fastapi import APIRouter, Depends
-
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.db import get_db
 from app.models.user import User
 from app.schemas.User import UserLogin, ChangePassword, UserSignup, UserSignupResponse, UserSignOnResponse
-
 from app.services.user_service import UserService
-
+from app.DatabaseOps.DatabaseRepository import DatabaseOps
+from app.dependencies import get_jwt_handler
+import jwt
+import os
+from datetime import datetime
 
 router = APIRouter(prefix="/auth")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 @router.post('/signup', response_model=UserSignupResponse)
 async def signup(
@@ -26,10 +30,29 @@ async def login(
     db: AsyncSession = Depends(get_db)):
     return await userservice.login(db, user_data)
    
-# this need to actualy logout
 @router.post('/logout')
-async def logout():
-    return {"message": "Success"}
+async def logout(
+    token: str = Depends(oauth2_scheme),
+    db: AsyncSession = Depends(get_db)):
+
+    db_ops = DatabaseOps()
+
+    try:
+        payload = jwt.decode(
+            token,
+            os.getenv("SECRET_KEY"),
+            algorithms=[os.getenv("ALGORITHM","HS256")]
+        )
+        exp = payload.get("exp")
+        expires_at = datetime.utcfromtimestamp(exp) if exp else datetime.utcnow()
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token"
+        )
+
+    await db_ops.blacklist_token(db, token, expires_at)
+    return {"message": "Successfully logged out"}    
 
 @router.post('/change-password')
 async def change_password(
