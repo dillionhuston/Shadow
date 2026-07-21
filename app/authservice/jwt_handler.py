@@ -2,10 +2,12 @@ import jwt
 import os
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from jwt.exceptions import PyJWTError 
 from app.models.db import get_db
 from dotenv import load_dotenv
+
+from app.models.user import User
 
 from app.DatabaseOps.DatabaseRepository import DatabaseOps
 
@@ -20,7 +22,12 @@ class JWTHandler():
         self.ALGORTHIM = os.getenv("ALGORITHM", "HS256")
         
         
-    def get_current_user(self, db_ops: DatabaseOps, token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    async def get_current_user(
+            self,
+            db_ops: DatabaseOps,
+            token: str = Depends(oauth2_scheme),
+            db: AsyncSession = Depends(get_db))-> User:
+        
         credentials_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Could not validate credentials",
@@ -28,17 +35,25 @@ class JWTHandler():
         )
         
         try:
-            payload = jwt.decode(token, self.SECRETKEY, algorithms=self.ALGORTHIM)
+            payload = jwt.decode(token, self.SECRETKEY, algorithms=[self.ALGORTHIM])
             username = payload.get("sub")
             
             if not isinstance(username, str):
                 raise credentials_exception
                 
         except PyJWTError as e:
-            print(f"[JWT] Decode error: {e}")  #TODO add proper logging
+            print(f"[JWT] Decode error: {e}")
             raise credentials_exception
         
-        user = db_ops.GetUserByusername(db, username)
+        # Check if token has been blacklisted
+        if await db_ops.is_token_blacklisted(db, token):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been blacklisted",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        user = await db_ops.GetUserByusername(db, username)
         
         if user is None:
             raise credentials_exception
