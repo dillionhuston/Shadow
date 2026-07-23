@@ -7,7 +7,6 @@ from app.models.user import User
 from app.schemas.User import UserLogin, ChangePassword, UserSignup, UserSignupResponse, UserSignOnResponse
 from app.services.user_service import UserService
 from app.DatabaseOps.DatabaseRepository import DatabaseOps
-from app.dependencies import get_jwt_handler
 import jwt
 import os
 from datetime import datetime
