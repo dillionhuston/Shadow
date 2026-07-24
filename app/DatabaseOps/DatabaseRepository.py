@@ -6,6 +6,8 @@ from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.user import User
 from app.models.file import File as FileModel
+from app.models.token_blacklist import TokenBlacklist
+from datetime import datetime
 class DatabaseOps():
     
     async def GetUserByusername(self, db: AsyncSession, user: str)-> Optional[User]:
@@ -48,3 +50,14 @@ class DatabaseOps():
         await db.commit()
         await db.refresh(file)
         return file    
+    
+    async def blacklist_token(self, db: AsyncSession, token: str, expires_at: datetime)-> None:
+        entry = TokenBlacklist(token=token, expires_at=expires_at)
+        db.add(entry)
+        await db.commit()
+
+    async def is_token_blacklisted(self, db: AsyncSession, token: str)-> bool:
+        result = await db.execute(
+            select(TokenBlacklist).where(TokenBlacklist.token == token)
+        )
+        return result.scalar_one_or_none() is not None
