@@ -42,9 +42,17 @@ class JWTHandler():
                 raise credentials_exception
                 
         except PyJWTError as e:
-            print(f"[JWT] Decode error: {e}")  #TODO add proper logging
+            print(f"[JWT] Decode error: {e}")
             raise credentials_exception
         
+        # Check if token has been blacklisted
+        if await db_ops.is_token_blacklisted(db, token):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has been blacklisted",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
         user = await db_ops.GetUserByusername(db, username)
         
         if user is None:
