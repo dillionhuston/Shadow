@@ -70,9 +70,18 @@ def client():
 
 class TestServiceError:
     def test_returns_500_status_code(self, client):
+        response = client.get("/raise-service-error")
+        assert response.status_code == 500
 
-    def test_rturns_json_detail_key(self, client):
+    def test_returns_json_detail_key(self, client):
+        response = client.get("/raise-service-error")
+        assert "detail" in response.json()
 
     def test_returns_default_detail_message(self, client):
+        response = client.get("/raise-service-error")
+        assert response.json()["detail"] == "An unexpected error occurred."
 
     def test_custom_detail_and_status_code(self, client):
+        response = client.get("/raise-custom-detail")
+        assert response.json()["detail"] == "Custom error message"
+        assert response.status_code == 422
