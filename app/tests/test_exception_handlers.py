@@ -121,3 +121,18 @@ class TestSubclassStatusCodes:
 
 
 # Subclass default detail messages
+
+class TestSubclassDefaultMessages:
+    def test_user_already_exists_message(self, client):
+
+    def test_authentication_error_message(self, client):
+
+    def test_incorrect_password_message(self, client):
+
+    def test_file_error_message(self, client):
+
+    def test_encryption_error_message(self, client):
+
+    def test_database_error_message(self, client):
+
+    def test_dashboard_error_message(self, client):
