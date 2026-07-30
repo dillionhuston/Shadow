@@ -150,3 +150,11 @@ class TestSubclassDefaultMessages:
     def test_dashboard_error_message(self, client):
         response = client.get("/raise-dashboard-error")
         assert response.json()["detail"] == "Dashboard error."
+
+
+# Response structure
+
+class TestResponseStructure:
+    def test_response_is_json(self, client):
+
+    def test_response_has_only_detail_key(self, client):
