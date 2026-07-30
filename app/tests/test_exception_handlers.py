@@ -92,15 +92,32 @@ class TestServiceError:
 
 class TestSubclassStatusCodes:
     def test_user_already_exists_error_returns_409(self, client):
+        response = client.get("/raise-user-exists")
+        assert response.status_code == 409
 
     def test_authentication_error_returns_401(self, client):
+        response = client.get("/raise-auth-error")
+        assert response.status_code == 401
 
     def test_incorrect_password_error_returns_401(self, client):
+        response = client.get("/raise-incorrect-password")
+        assert response.status_code == 401
 
     def test_file_error_returns_400(self, client):
+        response = client.get("/raise-file-error")
+        assert response.status_code == 400
 
     def test_encryption_error_returns_500(self, client):
+        response = client.get("/raise-encryption-error")
+        assert response.status_code == 500
 
     def test_database_error_returns_500(self, client):
+        response = client.get("/raise-database-error")
+        assert response.status_code == 500
 
     def test_dashboard_error_returns_500(self, client):
+        response = client.get("/raise-dashboard-error")
+        assert response.status_code == 500
+
+
+# Subclass default detail messages
