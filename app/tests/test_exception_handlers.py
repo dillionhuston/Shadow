@@ -162,3 +162,11 @@ class TestResponseStructure:
     def test_response_has_only_detail_key(self, client):
         response = client.get("/raise-service-error")
         assert list(response.json().keys()) == ["detail"]
+
+
+# Unhandled exception fallback
+
+class TestUnhandledExceptionHandler:
+    def test_unhandled_exception_returns_500(self, client):
+
+    def test_unhandled_exception_returns_json(self, client):
