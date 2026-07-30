@@ -168,5 +168,9 @@ class TestResponseStructure:
 
 class TestUnhandledExceptionHandler:
     def test_unhandled_exception_returns_500(self, client):
+        response = client.get("/raise-unhandled")
+        assert response.status_code == 500
 
     def test_unhandled_exception_returns_json(self, client):
+        response = client.get("/raise-unhandled")
+        assert "detail" in response.json()
