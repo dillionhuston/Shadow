@@ -124,15 +124,29 @@ class TestSubclassStatusCodes:
 
 class TestSubclassDefaultMessages:
     def test_user_already_exists_message(self, client):
+        response = client.get("/raise-user-exists")
+        assert response.json()["detail"] == "User already exists."
 
     def test_authentication_error_message(self, client):
+        response = client.get("/raise-auth-error")
+        assert response.json()["detail"] == "Authentication failed."
 
     def test_incorrect_password_message(self, client):
+        response = client.get("/raise-incorrect-password")
+        assert response.json()["detail"] == "Incorrect password."
 
     def test_file_error_message(self, client):
+        response = client.get("/raise-file-error")
+        assert response.json()["detail"] == "File operation failed."
 
     def test_encryption_error_message(self, client):
+        response = client.get("/raise-encryption-error")
+        assert response.json()["detail"] == "Encryption failed."
 
     def test_database_error_message(self, client):
+        response = client.get("/raise-database-error")
+        assert response.json()["detail"] == "Database error."
 
     def test_dashboard_error_message(self, client):
+        response = client.get("/raise-dashboard-error")
+        assert response.json()["detail"] == "Dashboard error."
