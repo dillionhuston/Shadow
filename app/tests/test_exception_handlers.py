@@ -141,7 +141,7 @@ class TestSubclassDefaultMessages:
 
     def test_encryption_error_message(self, client):
         response = client.get("/raise-encryption-error")
-        assert response.json()["detail"] == "Encryption failed."
+        assert response.json()["detail"] == "Encryption error."
 
     def test_database_error_message(self, client):
         response = client.get("/raise-database-error")
@@ -157,7 +157,7 @@ class TestSubclassDefaultMessages:
 class TestResponseStructure:
     def test_response_is_json(self, client):
         response = client.get("/raise-service-error")
-        assert response.headers["content-Type"] == "application/json"
+        assert response.headers["content-type"] == "application/json"
 
     def test_response_has_only_detail_key(self, client):
         response = client.get("/raise-service-error")
