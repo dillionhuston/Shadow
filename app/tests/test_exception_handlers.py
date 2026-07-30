@@ -65,3 +65,14 @@ def build_test_app() -> FastAPI:
 @pytest.fixture
 def client():
     return TestClient(build_test_app(), raise_server_exceptions=False)
+
+# ServiceError base class
+
+class TestServiceError:
+    def test_returns_500_status_code(self, client):
+
+    def test_rturns_json_detail_key(self, client):
+
+    def test_returns_default_detail_message(self, client):
+
+    def test_custom_detail_and_status_code(self, client):
