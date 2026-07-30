@@ -66,6 +66,7 @@ def build_test_app() -> FastAPI:
 def client():
     return TestClient(build_test_app(), raise_server_exceptions=False)
 
+
 # ServiceError base class
 
 class TestServiceError:
@@ -85,3 +86,21 @@ class TestServiceError:
         response = client.get("/raise-custom-detail")
         assert response.json()["detail"] == "Custom error message"
         assert response.status_code == 422
+
+
+# subclass status codes
+
+class TestSubclassStatusCodes:
+    def test_user_already_exists_error_returns_409(self, client):
+
+    def test_authentication_error_returns_401(self, client):
+
+    def test_incorrect_password_error_returns_401(self, client):
+
+    def test_file_error_returns_400(self, client):
+
+    def test_encryption_error_returns_500(self, client):
+
+    def test_database_error_returns_500(self, client):
+
+    def test_dashboard_error_returns_500(self, client):
