@@ -156,5 +156,9 @@ class TestSubclassDefaultMessages:
 
 class TestResponseStructure:
     def test_response_is_json(self, client):
+        response = client.get("/raise-service-error")
+        assert response.headers["content-Type"] == "application/json"
 
     def test_response_has_only_detail_key(self, client):
+        response = client.get("/raise-service-error")
+        assert list(response.json().keys()) == ["detail"]
